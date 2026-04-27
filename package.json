@@ -1,0 +1,12 @@
+{
+  "name": "trukoder-elio",
+  "version": "0.0.1",
+  "description": "Trukoder's 24/7 lead-finding assistant",
+  "type": "module",
+  "scripts": {
+    "start": "node elio.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}
