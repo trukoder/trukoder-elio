@@ -75,10 +75,13 @@ async function fetchOverpass(city, industry){
     );
     out center;
   `;
-  const resp = await fetch('https://overpass-api.de/api/interpreter', {
+    const resp = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
-    body: query,
-    headers: { 'Content-Type': 'text/plain' },
+    body: 'data=' + encodeURIComponent(query),
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'trukoder-elio/0.1 (lead-finder)',
+    },
   });
   if(!resp.ok){
     throw new Error(`Overpass returned ${resp.status}`);
