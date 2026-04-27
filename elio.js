@@ -29,7 +29,9 @@ const INDUSTRIES = [
 ];
 
 const RADIUS_M = 5000;
-const MAX_PER_RUN = 3;
+const PER_COMBO_CAP = 3;
+const TOTAL_CAP = 30;
+const BATCH_SIZE = 4;
 
 const NOTES = [
   'You got dis!',
@@ -75,7 +77,7 @@ async function fetchOverpass(city, industry){
     );
     out center;
   `;
-    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+  const resp = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
     body: 'data=' + encodeURIComponent(query),
     headers: {
@@ -130,27 +132,58 @@ async function main(){
 
   const { names: existingNames, recentNotes } = await loadExisting();
 
-  const city = pick(CITIES);
-  const industry = pick(INDUSTRIES);
-  console.log(`Hunting ${industry.label} in ${city.name}...`);
+  const combos = [];
+  for(const city of CITIES){
+    for(const industry of INDUSTRIES){
+      combos.push({ city, industry });
+    }
+  }
+  console.log(`Scanning ${combos.length} city × industry combos...`);
 
-  const elements = await fetchOverpass(city, industry);
-  console.log(`Overpass returned ${elements.length} elements.`);
+  const allCandidates = [];
 
-  const candidates = elements
-    .filter(isCandidate)
-    .filter(el => !existingNames.has(el.tags.name.toLowerCase()));
+  for(let i = 0; i < combos.length; i += BATCH_SIZE){
+    const batch = combos.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(batch.map(async ({ city, industry }) => {
+      try{
+        const elements = await fetchOverpass(city, industry);
+        return { city, industry, elements };
+      }catch(e){
+        console.error(`  ${city.name} × ${industry.label} failed: ${e.message}`);
+        return { city, industry, elements: [] };
+      }
+    }));
 
-  console.log(`${candidates.length} candidates after dedupe + website filter.`);
+    for(const { city, industry, elements } of results){
+      const fresh = elements
+        .filter(isCandidate)
+        .filter(el => !existingNames.has(el.tags.name.toLowerCase()));
+      if(fresh.length > 0){
+        console.log(`  ${city.name} × ${industry.label}: ${fresh.length} new`);
+      }
+      for(const el of fresh.slice(0, PER_COMBO_CAP)){
+        const lower = el.tags.name.toLowerCase();
+        if(existingNames.has(lower)) continue;
+        existingNames.add(lower);
+        allCandidates.push({ el, city, industry });
+      }
+    }
 
-  if(candidates.length === 0){
-    await logHeartbeat(`No new ${industry.label}s in ${city.name}.`);
-    console.log('Nothing to insert. Done.');
+    if(i + BATCH_SIZE < combos.length){
+      await new Promise(r => setTimeout(r, 300));
+    }
+  }
+
+  console.log(`Total new candidates: ${allCandidates.length}`);
+
+  if(allCandidates.length === 0){
+    await logHeartbeat(`Scanned ${combos.length} combos, no new leads found.`);
     return;
   }
 
+  const limited = allCandidates.slice(0, TOTAL_CAP);
   const usedNotes = new Set(recentNotes);
-  const rows = candidates.slice(0, MAX_PER_RUN).map(el => {
+  const rows = limited.map(({ el, city, industry }) => {
     const note = pickNote(usedNotes);
     usedNotes.add(note);
     return {
@@ -175,7 +208,7 @@ async function main(){
 
   console.log(`Inserted ${rows.length} drafts:`);
   rows.forEach(r => console.log(`  - ${r.name} (${r.city}, ${r.industry})`));
-  await logHeartbeat(`Found ${rows.length} new ${industry.label}s in ${city.name}.`);
+  await logHeartbeat(`Found ${rows.length} new leads across ${combos.length} combos.`);
 }
 
 main().catch(err => {
