@@ -341,6 +341,7 @@ async function fetchFoursquare(city, industry){
 
 function isCandidate(p){
   if(!p.name) return false;
+  if(!p.tel) return false;
   if(p.website) return false;
   if(p.chains && p.chains.length > 0) return false;
   return true;
