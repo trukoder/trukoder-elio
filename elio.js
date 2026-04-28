@@ -2,9 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const FOURSQUARE_API_KEY = process.env.FOURSQUARE_API_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_KEY environment variables.');
+if (!SUPABASE_URL || !SUPABASE_KEY || !FOURSQUARE_API_KEY) {
+  console.error('Missing required environment variables (SUPABASE_URL, SUPABASE_KEY, FOURSQUARE_API_KEY).');
   process.exit(1);
 }
 
@@ -22,10 +23,10 @@ const CITIES = [
 ];
 
 const INDUSTRIES = [
-  { label: 'Cafe',        osm: '"amenity"="cafe"' },
-  { label: 'Bakery',      osm: '"shop"="bakery"' },
-  { label: 'Plumbing',    osm: '"craft"="plumber"' },
-  { label: 'Electrician', osm: '"craft"="electrician"' },
+  { label: 'Cafe',        query: 'cafe' },
+  { label: 'Bakery',      query: 'bakery' },
+  { label: 'Plumbing',    query: 'plumber' },
+  { label: 'Electrician', query: 'electrician' },
 ];
 
 const RADIUS_M = 5000;
@@ -68,41 +69,37 @@ function uid(){
 
 function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
 
-async function fetchOverpass(city, industry){
-  const query = `
-    [out:json][timeout:25];
-    (
-      node[${industry.osm}](around:${RADIUS_M},${city.lat},${city.lon});
-      way[${industry.osm}](around:${RADIUS_M},${city.lat},${city.lon});
-    );
-    out center;
-  `;
-  const resp = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: 'data=' + encodeURIComponent(query),
+async function fetchFoursquare(city, industry){
+  const params = new URLSearchParams({
+    ll: `${city.lat},${city.lon}`,
+    radius: String(RADIUS_M),
+    query: industry.query,
+    limit: '50',
+    fields: 'fsq_id,name,tel,website,categories,location,chains',
+  });
+  const resp = await fetch(`https://api.foursquare.com/v3/places/search?${params}`, {
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'trukoder-elio/0.1 (lead-finder)',
+      'Authorization': FOURSQUARE_API_KEY,
+      'Accept': 'application/json',
     },
   });
   if(!resp.ok){
-    throw new Error(`Overpass returned ${resp.status}`);
+    const body = await resp.text();
+    throw new Error(`Foursquare returned ${resp.status}: ${body.slice(0, 200)}`);
   }
   const data = await resp.json();
-  return data.elements || [];
+  return data.results || [];
 }
 
-function isCandidate(el){
-  const t = el.tags || {};
-  if(!t.name) return false;
-  if(t.website || t['contact:website']) return false;
-  if(t.brand || t['brand:wikipedia']) return false;
+function isCandidate(p){
+  if(!p.name) return false;
+  if(p.website) return false;
+  if(p.chains && p.chains.length > 0) return false;
   return true;
 }
 
-function extractPhone(el){
-  const t = el.tags || {};
-  return t.phone || t['contact:phone'] || null;
+function extractPhone(p){
+  return p.tel || null;
 }
 
 async function loadExisting(){
@@ -147,26 +144,26 @@ async function main(){
     const batch = combos.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(batch.map(async ({ city, industry }) => {
       try{
-        const elements = await fetchOverpass(city, industry);
-        return { city, industry, elements };
+        const places = await fetchFoursquare(city, industry);
+        return { city, industry, places };
       }catch(e){
         console.error(`  ${city.name} × ${industry.label} failed: ${e.message}`);
-        return { city, industry, elements: [] };
+        return { city, industry, places: [] };
       }
     }));
 
-    for(const { city, industry, elements } of results){
-      const fresh = elements
+    for(const { city, industry, places } of results){
+      const fresh = places
         .filter(isCandidate)
-        .filter(el => !existingNames.has(el.tags.name.toLowerCase()));
+        .filter(p => !existingNames.has(p.name.toLowerCase()));
       if(fresh.length > 0){
         console.log(`  ${city.name} × ${industry.label}: ${fresh.length} new`);
       }
-      for(const el of fresh.slice(0, PER_COMBO_CAP)){
-        const lower = el.tags.name.toLowerCase();
+      for(const p of fresh.slice(0, PER_COMBO_CAP)){
+        const lower = p.name.toLowerCase();
         if(existingNames.has(lower)) continue;
         existingNames.add(lower);
-        allCandidates.push({ el, city, industry });
+        allCandidates.push({ place: p, city, industry });
       }
     }
 
@@ -184,13 +181,13 @@ async function main(){
 
   const limited = allCandidates.slice(0, TOTAL_CAP);
   const usedNotes = new Set(recentNotes);
-  const rows = limited.map(({ el, city, industry }) => {
+  const rows = limited.map(({ place, city, industry }) => {
     const note = pickNote(usedNotes);
     usedNotes.add(note);
     return {
       id: uid(),
-      name: el.tags.name,
-      phone: extractPhone(el),
+      name: place.name,
+      phone: extractPhone(place),
       city: city.name,
       industry: industry.label,
       status: 'New',
