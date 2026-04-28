@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const FOURSQUARE_API_KEY = process.env.FOURSQUARE_API_KEY;
+const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 
 if (!SUPABASE_URL || !SUPABASE_KEY || !FOURSQUARE_API_KEY) {
   console.error('Missing required environment variables (SUPABASE_URL, SUPABASE_KEY, FOURSQUARE_API_KEY).');
@@ -56,6 +57,199 @@ const NOTES = [
   'Dial like you mean it.',
   'Worst they can say is no.',
 ];
+
+const INDUSTRY_THEMES = {
+  'Cafe':        { primary: '#6F4E37', secondary: '#D4A574', accent: '#FFF8E7', tag: 'Crafted with care, served with love.' },
+  'Bakery':      { primary: '#C97B7B', secondary: '#F8B8B8', accent: '#FFF5F5', tag: 'Fresh from the oven, every single day.' },
+  'Plumbing':    { primary: '#1E40AF', secondary: '#60A5FA', accent: '#EFF6FF', tag: 'Reliable plumbing, day or night.' },
+  'Electrician': { primary: '#B45309', secondary: '#FBBF24', accent: '#FFFBEB', tag: 'Your local power experts.' },
+};
+
+const DEMO_TEMPLATE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{NAME}} — {{CITY}}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;color:#1a1a1a;line-height:1.6;background:{{ACCENT}}}
+.hero{background:linear-gradient(135deg,{{PRIMARY}},{{SECONDARY}});color:#fff;padding:6rem 2rem;text-align:center;min-height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.hero .badge{font-size:.8rem;text-transform:uppercase;letter-spacing:.2em;opacity:.85;margin-bottom:1rem}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:900;margin-bottom:1rem;line-height:1.1}
+.hero .tag{font-size:1.2rem;max-width:600px;opacity:.95}
+.section{padding:4rem 2rem;max-width:900px;margin:0 auto}
+.contact{text-align:center;background:#fff;padding:3rem 2rem;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+.contact h2{font-family:'Playfair Display',serif;font-size:2.2rem;color:{{PRIMARY}};margin-bottom:1.5rem}
+.contact p{font-size:1.05rem;margin:.6rem 0;color:#444}
+.phone{font-size:1.6rem;font-weight:700;color:{{PRIMARY}};margin:1rem 0;display:block}
+.phone a{color:{{PRIMARY}};text-decoration:none}
+.phone a:hover{text-decoration:underline}
+.cta{display:inline-block;background:{{PRIMARY}};color:#fff;padding:1rem 2.5rem;border-radius:50px;text-decoration:none;font-weight:600;margin-top:1.5rem;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.2)}
+footer{padding:2rem;text-align:center;color:#888;font-size:.85rem;background:#fff;border-top:1px solid #eee}
+footer a{color:{{PRIMARY}};text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<section class="hero">
+  <div class="badge">{{CITY}} · {{INDUSTRY}}</div>
+  <h1>{{NAME}}</h1>
+  <p class="tag">{{TAGLINE}}</p>
+</section>
+<section class="section">
+  <div class="contact">
+    <h2>Get in Touch</h2>
+    <p>Located in {{CITY}}, California</p>
+    {{PHONE_BLOCK}}
+    {{CTA_BUTTON}}
+  </div>
+</section>
+<footer>
+  <p>Sample site designed by <a href="https://trukoder.com">Trukoder</a> · Web design for Coachella Valley businesses</p>
+</footer>
+</body></html>`;
+
+function escapeHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function slugify(s){
+  return String(s||'').toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'')
+    .slice(0, 50);
+}
+
+function buildDemoHtml(lead){
+  const theme = INDUSTRY_THEMES[lead.industry] || INDUSTRY_THEMES['Cafe'];
+  const phoneBlock = lead.phone
+    ? `<span class="phone"><a href="tel:${escapeHtml(lead.phone)}">${escapeHtml(lead.phone)}</a></span>`
+    : '';
+  const ctaButton = lead.phone
+    ? `<a href="tel:${escapeHtml(lead.phone)}" class="cta">Call Us</a>`
+    : `<a href="#" class="cta">Visit Us</a>`;
+  return DEMO_TEMPLATE
+    .replace(/\{\{NAME\}\}/g, escapeHtml(lead.name))
+    .replace(/\{\{CITY\}\}/g, escapeHtml(lead.city || ''))
+    .replace(/\{\{INDUSTRY\}\}/g, escapeHtml(lead.industry || ''))
+    .replace(/\{\{TAGLINE\}\}/g, escapeHtml(theme.tag))
+    .replace(/\{\{PRIMARY\}\}/g, theme.primary)
+    .replace(/\{\{SECONDARY\}\}/g, theme.secondary)
+    .replace(/\{\{ACCENT\}\}/g, theme.accent)
+    .replace(/\{\{PHONE_BLOCK\}\}/g, phoneBlock)
+    .replace(/\{\{CTA_BUTTON\}\}/g, ctaButton);
+}
+
+async function netlifyCreateSite(name){
+  const resp = await fetch('https://api.netlify.com/api/v1/sites', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${NETLIFY_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name }),
+  });
+  if(!resp.ok){
+    const t = await resp.text();
+    throw new Error(`Netlify site create failed (${resp.status}): ${t.slice(0,200)}`);
+  }
+  return await resp.json();
+}
+
+async function netlifyCreateSiteWithFallback(baseSlug){
+  const tries = [baseSlug, `${baseSlug}-${Math.random().toString(36).slice(2,5)}`, `${baseSlug}-${Date.now().toString(36).slice(-4)}`];
+  let lastErr;
+  for(const name of tries){
+    try{
+      return await netlifyCreateSite(name);
+    }catch(e){
+      lastErr = e;
+      if(!String(e.message).includes('422')) throw e;
+    }
+  }
+  throw lastErr;
+}
+
+async function netlifyDeployHtml(siteId, html){
+  const { createHash } = await import('node:crypto');
+  const sha = createHash('sha1').update(html).digest('hex');
+
+  const r1 = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${NETLIFY_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ files: { '/index.html': sha } }),
+  });
+  if(!r1.ok){
+    const t = await r1.text();
+    throw new Error(`Netlify deploy create failed (${r1.status}): ${t.slice(0,200)}`);
+  }
+  const deploy = await r1.json();
+
+  const r2 = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}/files/index.html`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${NETLIFY_TOKEN}`,
+      'Content-Type': 'application/octet-stream',
+    },
+    body: html,
+  });
+  if(!r2.ok){
+    const t = await r2.text();
+    throw new Error(`Netlify file upload failed (${r2.status}): ${t.slice(0,200)}`);
+  }
+  return deploy;
+}
+
+async function processPendingDemos(){
+  if(!NETLIFY_TOKEN){
+    console.log('No NETLIFY_TOKEN — skipping demo processing.');
+    return;
+  }
+  const { data: pending, error } = await sb.from('leads')
+    .select('*')
+    .eq('pending_demo', true)
+    .limit(5);
+  if(error){
+    console.error('Failed to load pending demos:', error.message);
+    return;
+  }
+  if(!pending || pending.length === 0){
+    console.log('No pending demos to build.');
+    return;
+  }
+
+  console.log(`Building ${pending.length} demo site${pending.length>1?'s':''}...`);
+  let succeeded = 0;
+  for(const lead of pending){
+    try{
+      const baseSlug = `trukoder-${slugify(lead.name)}`;
+      const site = await netlifyCreateSiteWithFallback(baseSlug);
+      const html = buildDemoHtml(lead);
+      await netlifyDeployHtml(site.id, html);
+      const url = site.ssl_url || site.url || `https://${site.name}.netlify.app`;
+
+      const upd = await sb.from('leads').update({
+        demo_link: url,
+        pending_demo: false,
+      }).eq('id', lead.id);
+
+      if(upd.error){
+        console.error(`  ✗ ${lead.name}: deployed but DB update failed: ${upd.error.message}`);
+      } else {
+        console.log(`  ✓ ${lead.name} → ${url}`);
+        succeeded++;
+      }
+    }catch(e){
+      console.error(`  ✗ ${lead.name}: ${e.message}`);
+    }
+  }
+  await logHeartbeat(`Built ${succeeded}/${pending.length} demos.`);
+}
 
 function todayPlus(days){
   const d = new Date();
@@ -209,7 +403,12 @@ async function main(){
   await logHeartbeat(`Found ${rows.length} new leads across ${combos.length} combos.`);
 }
 
-main().catch(err => {
+async function run(){
+  await main();
+  await processPendingDemos();
+}
+
+run().catch(err => {
   console.error('Elio crashed:', err);
   process.exit(1);
 });
