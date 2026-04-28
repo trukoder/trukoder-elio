@@ -96,6 +96,7 @@ function isCandidate(el){
   const t = el.tags || {};
   if(!t.name) return false;
   if(t.website || t['contact:website']) return false;
+  if(t.brand || t['brand:wikipedia']) return false;
   return true;
 }
 
