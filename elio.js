@@ -147,7 +147,8 @@ async function buildDemoHtml(lead){
     .replaceAll('{{NAME}}', escapeHtml(lead.name))
     .replaceAll('{{PHONE}}', escapeHtml(lead.phone || ''))
     .replaceAll('{{CITY}}', escapeHtml(lead.city || ''))
-    .replaceAll('{{EMAIL}}', escapeHtml(email));
+    .replaceAll('{{EMAIL}}', escapeHtml(email))
+    .replaceAll('{{PHOTO}}', escapeHtml(lead.photo_url || ''));
 }
 
 async function netlifyCreateSite(name){
@@ -277,7 +278,7 @@ async function fetchFoursquare(city, industry){
     radius: String(RADIUS_M),
     query: industry.query,
     limit: '50',
-    fields: 'fsq_id,name,tel,website,categories,location,chains',
+   fields: 'fsq_id,name,tel,website,categories,location,chains,rating,photos',
   });
   const resp = await fetch(`https://api.foursquare.com/v3/places/search?${params}`, {
     headers: {
@@ -301,10 +302,16 @@ function isCandidate(p){
   return true;
 }
 
-function extractPhone(p){
-  return p.tel || null;
+function extractRating(p){
+  return typeof p.rating === 'number' ? p.rating : null;
 }
 
+function extractPhotoUrl(p){
+  if(!p.photos || p.photos.length === 0) return null;
+  const photo = p.photos[0];
+  if(!photo.prefix || !photo.suffix) return null;
+  return `${photo.prefix}1200x600${photo.suffix}`;
+}
 async function loadExisting(){
   const [leadsRes, draftsRes] = await Promise.all([
     sb.from('leads').select('name'),
@@ -403,6 +410,8 @@ async function main(){
       follow_up_date: todayPlus(3),
       notes: note,
       date_added: todayPlus(0),
+      rating: extractRating(place),
+      photo_url: extractPhotoUrl(place),
     };
   });
 
