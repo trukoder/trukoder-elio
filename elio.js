@@ -333,7 +333,9 @@ async function main(){
 
   const { names: existingNames, recentNotes } = await loadExisting();
 
-  const region = pick(REGIONS);
+    const now = new Date();
+  const slotIndex = Math.floor((now.getUTCHours() * 60 + now.getUTCMinutes()) / 30);
+  const region = REGIONS[slotIndex % REGIONS.length];
   const regionCities = CITIES.filter(c => c.region === region);
   console.log(`Region this run: ${region} (${regionCities.length} cities)`);
 
