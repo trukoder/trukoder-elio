@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{NAME}} &ndash; {{CITY}}</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,400;1,9..144,500;1,9..144,700;1,9..144,900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+ --cream:#F5EFE3;--cream-w:#FAF6EC;--cream-d:#E8DFCC;
+ --cocoa:#241510;--cocoa-l:#3A241C;
+ --olive:#4A6041;--olive-d:#33442E;--olive-l:#7A8E70;
+ --terra:#BC5A37;--terra-l:#D27A52;
+ --butter:#E8C97D;--butter-l:#F2DA9A;
+ --ink:#1A1410;--gray:#6E6660;--gray-l:#A8A39C;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);overflow-x:hidden;
+ -webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+
+::selection{background:var(--terra);color:var(--cream-w)}
+
+.mono{font-family:'JetBrains Mono',monospace;font-weight:500;letter-spacing:-.01em}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:translateY(0)}
+.reveal[data-d="1"]{transition-delay:.08s}
+.reveal[data-d="2"]{transition-delay:.16s}
+.reveal[data-d="3"]{transition-delay:.24s}
+.reveal[data-d="4"]{transition-delay:.32s}
+.reveal[data-d="5"]{transition-delay:.4s}
+.reveal[data-d="6"]{transition-delay:.48s}
+
+/* TOP BAR */
+.tb{background:var(--cocoa);color:var(--cream-d);padding:.5rem 0;font-size:.72rem;letter-spacing:.06em;
+ overflow:hidden;border-bottom:1px solid rgba(245,239,227,.06)}
+.tb-track{display:flex;gap:3.5rem;animation:slide 50s linear infinite;white-space:nowrap;align-items:center}
+.tb-track span{display:inline-flex;align-items:center;gap:.6rem}
+.tb-track span::before{content:"\2022";color:var(--terra)}
+.tb-track .sep{color:var(--olive-l);opacity:.5}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* NAV */
+nav{background:rgba(245,239,227,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+ padding:1.2rem 3.5rem;display:flex;align-items:center;justify-content:space-between;
+ position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(36,21,16,.06);transition:padding .3s,background .3s}
+nav.shrunk{padding:.85rem 3.5rem;background:rgba(245,239,227,.95)}
+.brand{display:flex;align-items:center;gap:.85rem;text-decoration:none;color:inherit}
+.brand-mk{width:42px;height:42px;background:var(--cocoa);border-radius:50%;position:relative;
+ display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;
+ box-shadow:0 6px 20px rgba(36,21,16,.18)}
+.brand-mk::before{content:"";position:absolute;inset:4px;border-radius:50%;border:1px dashed var(--butter);
+ opacity:.45;animation:spin 24s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand-mk svg{width:18px;height:18px;fill:var(--butter);position:relative;z-index:1}
+.brand-tx{font-family:'Fraunces',serif;font-weight:700;font-size:1.15rem;color:var(--cocoa);line-height:1;
+ letter-spacing:-.02em}
+.brand-tx em{font-style:italic;color:var(--terra);font-weight:400}
+.brand-tg{display:block;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--gray);
+ letter-spacing:.18em;text-transform:uppercase;margin-top:4px;font-weight:500}
+nav ul{list-style:none;display:flex;gap:2.4rem}
+nav ul a{text-decoration:none;color:var(--cocoa);font-size:.86rem;font-weight:500;position:relative;padding:.3rem 0;
+ transition:color .25s}
+nav ul a::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1.5px;background:var(--terra);
+ transform:scaleX(0);transform-origin:right;transition:transform .35s cubic-bezier(.5,.1,.2,1)}
+nav ul a:hover{color:var(--terra)}
+nav ul a:hover::after{transform:scaleX(1);transform-origin:left}
+.nav-r{display:flex;align-items:center;gap:1.4rem}
+.nav-ph{font-family:'JetBrains Mono',monospace;font-size:.84rem;color:var(--cocoa);text-decoration:none;
+ transition:color .2s}
+.nav-ph:hover{color:var(--terra)}
+.nav-btn{background:var(--cocoa);color:var(--cream-w);padding:.78rem 1.5rem;border-radius:30px;
+ font-size:.78rem;font-weight:600;text-decoration:none;letter-spacing:.06em;text-transform:uppercase;
+ transition:all .3s cubic-bezier(.2,.8,.2,1);position:relative;overflow:hidden}
+.nav-btn::before{content:"";position:absolute;inset:0;background:var(--terra);transform:translateY(100%);
+ transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.nav-btn:hover::before{transform:translateY(0)}
+.nav-btn span{position:relative;z-index:1}
+
+/* HERO */
+.hero{padding:6rem 3.5rem 4rem;display:grid;grid-template-columns:1.05fr 1fr;gap:4rem;align-items:center;
+ position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;top:10%;right:-180px;width:360px;height:360px;border-radius:50%;
+ background:radial-gradient(circle,rgba(232,201,125,.4) 0%,transparent 70%);pointer-events:none;
+ animation:float 14s ease-in-out infinite}
+.hero::after{content:"";position:absolute;bottom:-100px;left:5%;width:280px;height:280px;border-radius:50%;
+ background:radial-gradient(circle,rgba(74,96,65,.18) 0%,transparent 70%);pointer-events:none;
+ animation:float 18s ease-in-out infinite reverse}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-30px)}}
+.hero-l{position:relative;z-index:2}
+.hero-eb{display:inline-flex;align-items:center;gap:.7rem;font-family:'JetBrains Mono',monospace;font-size:.74rem;
+ color:var(--terra);letter-spacing:.16em;text-transform:uppercase;margin-bottom:1.6rem}
+.hero-eb::before{content:"";width:32px;height:1.5px;background:var(--terra);transform-origin:left;
+ animation:line-grow 1s cubic-bezier(.2,.8,.2,1) .2s both}
+@keyframes line-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.hero-h{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(2.8rem,5.4vw,5rem);line-height:.96;
+ color:var(--cocoa);letter-spacing:-.025em;margin-bottom:1.6rem}
+.hero-h .word{display:inline-block;opacity:0;transform:translateY(40px);animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+.hero-h .word.w1{animation-delay:.05s}.hero-h .word.w2{animation-delay:.13s}.hero-h .word.w3{animation-delay:.21s}
+.hero-h .word.w4{animation-delay:.29s}.hero-h .word.w5{animation-delay:.37s}.hero-h .word.w6{animation-delay:.45s}
+.hero-h .word.w7{animation-delay:.53s}
+.hero-h em{font-style:italic;color:var(--terra);font-weight:500;position:relative;display:inline-block}
+.hero-h em::after{content:"";position:absolute;left:0;right:0;bottom:.08em;height:.18em;background:var(--butter);
+ z-index:-1;border-radius:6px;transform:scaleX(0);transform-origin:left;
+ animation:hl 1s cubic-bezier(.2,.8,.2,1) 1s both}
+@keyframes hl{to{transform:scaleX(1)}}
+@keyframes rise{to{opacity:1;transform:translateY(0)}}
+.hero-p{font-size:1.05rem;line-height:1.7;color:var(--gray);max-width:480px;margin-bottom:2.4rem;
+ opacity:0;animation:rise .9s cubic-bezier(.2,.8,.2,1) .8s forwards}
+.hero-btns{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;
+ opacity:0;animation:rise .9s cubic-bezier(.2,.8,.2,1) .95s forwards}
+.btn-p{background:var(--cocoa);color:var(--cream-w);padding:1.05rem 2.2rem;border-radius:50px;border:none;
+ font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+ text-decoration:none;display:inline-flex;align-items:center;gap:.6rem;cursor:pointer;
+ transition:transform .3s cubic-bezier(.2,.8,.2,1);position:relative;overflow:hidden;isolation:isolate}
+.btn-p::before{content:"";position:absolute;inset:0;background:var(--terra);transform:scaleX(0);transform-origin:right;
+ transition:transform .4s cubic-bezier(.2,.8,.2,1);z-index:-1}
+.btn-p:hover{transform:translateY(-2px)}
+.btn-p:hover::before{transform:scaleX(1);transform-origin:left}
+.btn-p .arr{transition:transform .3s}
+.btn-p:hover .arr{transform:translateX(4px)}
+.btn-g{color:var(--cocoa);font-family:'Inter',sans-serif;font-size:.84rem;font-weight:600;text-decoration:none;
+ padding:1.05rem 0;display:inline-flex;align-items:center;gap:.5rem;position:relative}
+.btn-g::after{content:"";position:absolute;left:0;right:0;bottom:.6rem;height:1.5px;background:var(--cocoa);
+ transition:background .25s}
+.btn-g:hover{color:var(--terra)}
+.btn-g:hover::after{background:var(--terra)}
+.hero-r{position:relative;z-index:2}
+.hero-fr{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:8px;
+ box-shadow:0 30px 60px -20px rgba(36,21,16,.3);animation:rise 1.2s cubic-bezier(.2,.8,.2,1) .3s both}
+.hero-fr img{width:100%;height:100%;object-fit:cover;display:block;
+ animation:zoom-out 1.6s cubic-bezier(.2,.8,.2,1) .3s both,kenburns 30s ease-in-out 2s infinite alternate}
+@keyframes zoom-out{from{transform:scale(1.15)}to{transform:scale(1)}}
+@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.06) translate(-1%,-2%)}}
+.hero-tag{position:absolute;top:1.4rem;left:-1.4rem;background:var(--butter);color:var(--cocoa);
+ padding:.5rem 1.1rem;border-radius:30px;font-family:'JetBrains Mono',monospace;font-size:.72rem;
+ font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+ box-shadow:0 8px 24px rgba(232,201,125,.4);animation:rise 1s cubic-bezier(.2,.8,.2,1) 1.2s both}
+.hero-card{position:absolute;bottom:-1.4rem;right:-1.6rem;background:var(--cream-w);padding:1.3rem 1.4rem;
+ border-radius:14px;box-shadow:0 22px 50px -10px rgba(36,21,16,.25);max-width:240px;
+ animation:rise 1s cubic-bezier(.2,.8,.2,1) 1.4s both}
+.hero-card .lab{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--gray);letter-spacing:.16em;
+ text-transform:uppercase;margin-bottom:.4rem}
+.hero-card .nam{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:500;color:var(--cocoa);line-height:1.3}
+.hero-card .nam em{font-style:italic;color:var(--terra)}
+.hero-card .met{display:flex;justify-content:space-between;align-items:center;margin-top:.7rem;
+ padding-top:.7rem;border-top:1px dashed var(--cream-d)}
+.hero-card .met-l{font-size:.74rem;color:var(--gray);font-family:'JetBrains Mono',monospace}
+.hero-card .met-r{color:var(--terra);font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:500}
+.hero-scroll{display:flex;align-items:center;gap:.8rem;margin-top:3rem;font-family:'JetBrains Mono',monospace;
+ font-size:.72rem;color:var(--gray);letter-spacing:.1em;text-transform:uppercase;
+ animation:rise 1s cubic-bezier(.2,.8,.2,1) 1.1s both}
+.hero-scroll-line{width:40px;height:1.5px;background:var(--cocoa);position:relative;overflow:hidden}
+.hero-scroll-line::before{content:"";position:absolute;inset:0;background:var(--terra);
+ animation:scroll-bar 2.4s ease-in-out infinite}
+@keyframes scroll-bar{0%{transform:translateX(-100%)}50%{transform:translateX(0)}100%{transform:translateX(100%)}}
+
+/* COUNTER STATS */
+.stats{padding:5rem 3.5rem;background:var(--cocoa);color:var(--cream-w);position:relative;overflow:hidden}
+.stats::before{content:"";position:absolute;top:50%;left:-100px;width:300px;height:300px;border-radius:50%;
+ background:radial-gradient(circle,rgba(74,96,65,.4) 0%,transparent 70%);transform:translateY(-50%)}
+.stats::after{content:"";position:absolute;top:50%;right:-100px;width:300px;height:300px;border-radius:50%;
+ background:radial-gradient(circle,rgba(188,90,55,.25) 0%,transparent 70%);transform:translateY(-50%)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3rem;max-width:1200px;margin:0 auto;
+ position:relative;z-index:1}
+.st{position:relative}
+.st-n{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(2.6rem,4.8vw,4rem);line-height:.95;
+ color:var(--cream-w);letter-spacing:-.025em;margin-bottom:.5rem;display:flex;align-items:baseline;gap:.15em}
+.st-n em{font-style:italic;color:var(--butter);font-size:.6em;font-weight:400}
+.st-n .sm{font-size:.4em;color:var(--olive-l);font-weight:400;font-style:italic;letter-spacing:0}
+.st-l{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+ color:rgba(245,239,227,.55);font-weight:500}
+.st::before{content:"";position:absolute;top:.4rem;left:-1.5rem;width:6px;height:6px;border-radius:50%;
+ background:var(--terra);opacity:0;animation:dot .6s cubic-bezier(.2,.8,.2,1) forwards}
+.st:nth-child(1)::before{animation-delay:.2s}
+.st:nth-child(2)::before{animation-delay:.35s}
+.st:nth-child(3)::before{animation-delay:.5s}
+.st:nth-child(4)::before{animation-delay:.65s}
+@keyframes dot{to{opacity:1}}
+
+/* MARQUEE */
+.marq{background:var(--cream);padding:1.6rem 0;border-top:1px solid var(--cream-d);
+ border-bottom:1px solid var(--cream-d);overflow:hidden}
+.marq-trk{display:flex;gap:3rem;animation:slide 38s linear infinite;white-space:nowrap;
+ font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:1.4rem;color:var(--olive-d)}
+.marq-trk span{display:inline-flex;align-items:center;gap:3rem}
+.marq-trk span::after{content:"\273F";color:var(--terra);font-style:normal;font-size:.85em}
+
+/* MENU */
+.menu{padding:7rem 3.5rem 8rem;background:var(--cream)}
+.menu-head{display:grid;grid-template-columns:1fr auto;gap:3rem;align-items:end;margin-bottom:4rem}
+.eb{display:inline-flex;align-items:center;gap:.7rem;font-family:'JetBrains Mono',monospace;font-size:.74rem;
+ letter-spacing:.16em;text-transform:uppercase;color:var(--terra);font-weight:500;margin-bottom:1.2rem}
+.eb::before{content:"";width:24px;height:1.5px;background:var(--terra)}
+h2{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(2.1rem,3.7vw,3.4rem);line-height:1.04;
+ color:var(--cocoa);margin-bottom:.9rem;letter-spacing:-.02em}
+h2 em{font-style:italic;color:var(--terra)}
+.s-sub{font-size:.98rem;color:var(--gray);line-height:1.7;max-width:560px;font-weight:400}
+.menu-num{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--gray);letter-spacing:.12em;
+ text-align:right}
+.menu-num strong{color:var(--cocoa);font-weight:500}
+.menu-list{display:flex;flex-direction:column;border-top:1px solid var(--cream-d)}
+.m-row{display:grid;grid-template-columns:80px 1fr 1.3fr 120px;gap:2rem;padding:2rem 0;
+ border-bottom:1px solid var(--cream-d);align-items:center;position:relative;cursor:pointer;
+ transition:padding .4s cubic-bezier(.2,.8,.2,1)}
+.m-row:hover{padding-left:1.5rem}
+.m-row::before{content:"";position:absolute;left:0;top:50%;width:0;height:1.5px;background:var(--terra);
+ transform:translateY(-50%);transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.m-row:hover::before{width:1rem}
+.m-num{font-family:'Fraunces',serif;font-style:italic;font-size:1.05rem;color:var(--gray-l);font-weight:400}
+.m-row:hover .m-num{color:var(--terra)}
+.m-name{font-family:'Fraunces',serif;font-weight:500;font-size:1.45rem;color:var(--cocoa);letter-spacing:-.01em;
+ transition:color .25s,transform .4s cubic-bezier(.2,.8,.2,1)}
+.m-row:hover .m-name{color:var(--terra);transform:translateX(4px)}
+.m-name em{font-style:italic;color:var(--olive)}
+.m-desc{font-size:.88rem;color:var(--gray);line-height:1.6}
+.m-pr{font-family:'Fraunces',serif;font-style:italic;font-size:1.15rem;color:var(--cocoa);text-align:right;
+ font-weight:500}
+.m-img{position:fixed;width:280px;height:340px;border-radius:8px;overflow:hidden;pointer-events:none;
+ opacity:0;transform:scale(.85);transition:opacity .3s,transform .3s;z-index:200;
+ box-shadow:0 30px 60px -20px rgba(36,21,16,.4)}
+.m-img.show{opacity:1;transform:scale(1)}
+.m-img img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* SPLIT BANNER */
+.split{display:grid;grid-template-columns:1fr 1fr;min-height:520px;background:var(--cocoa);color:var(--cream-w)}
+.split-l{padding:5rem 3.5rem;display:flex;flex-direction:column;justify-content:center;position:relative}
+.split-l::before{content:"03";position:absolute;top:2rem;right:2rem;font-family:'Fraunces',serif;font-style:italic;
+ font-size:6rem;color:var(--cocoa-l);line-height:1;font-weight:300}
+.split-l h2{color:var(--cream-w);max-width:480px;margin-bottom:1.4rem}
+.split-l h2 em{color:var(--butter)}
+.split-l p{font-size:1rem;line-height:1.7;color:rgba(245,239,227,.72);max-width:440px;margin-bottom:2rem;font-weight:300}
+.split-l .btn-p{background:var(--butter);color:var(--cocoa)}
+.split-l .btn-p::before{background:var(--terra);}
+.split-l .btn-p:hover{color:var(--cream-w)}
+.split-r{position:relative;overflow:hidden}
+.split-r img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 1.2s cubic-bezier(.2,.8,.2,1)}
+.split:hover .split-r img{transform:scale(1.05)}
+.split-r::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--cocoa) 0,transparent 12%)}
+
+/* STORY / ABOUT */
+.story{padding:7rem 3.5rem;background:var(--cream-w);position:relative;overflow:hidden}
+.story::before{content:"";position:absolute;top:5%;right:-150px;width:400px;height:400px;border-radius:50%;
+ background:radial-gradient(circle,rgba(74,96,65,.1) 0%,transparent 70%);pointer-events:none}
+.story-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:5rem;align-items:center;position:relative;z-index:1}
+.story-l .s-sub{margin-bottom:0}
+.story-pts{margin-top:2.6rem;display:flex;flex-direction:column}
+.s-pt{display:grid;grid-template-columns:80px 1fr;gap:1.4rem;padding:1.6rem 0;border-top:1px solid var(--cream-d);
+ transition:padding-left .35s cubic-bezier(.2,.8,.2,1)}
+.s-pt:hover{padding-left:.5rem}
+.s-pt:last-child{border-bottom:1px solid var(--cream-d)}
+.s-pt-n{font-family:'Fraunces',serif;font-style:italic;font-weight:400;font-size:1.4rem;color:var(--terra);
+ line-height:1}
+.s-pt-h{font-family:'Fraunces',serif;font-weight:500;font-size:1.15rem;color:var(--cocoa);margin-bottom:.4rem;
+ letter-spacing:-.005em}
+.s-pt-d{font-size:.88rem;color:var(--gray);line-height:1.7}
+.story-r{position:relative;height:600px}
+.story-im{position:absolute;border-radius:8px;overflow:hidden;background:var(--cream-d)}
+.story-im img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 1s cubic-bezier(.2,.8,.2,1)}
+.story-im:hover img{transform:scale(1.06)}
+.story-im.m{top:0;right:0;width:75%;height:65%;box-shadow:0 25px 50px -15px rgba(36,21,16,.25)}
+.story-im.s{bottom:0;left:0;width:55%;height:50%;box-shadow:0 25px 50px -15px rgba(36,21,16,.25);z-index:2}
+.story-bg{position:absolute;top:55%;left:35%;width:55%;height:25%;background:var(--olive);border-radius:8px;
+ z-index:1;display:flex;flex-direction:column;justify-content:center;padding:1.4rem 1.6rem;color:var(--cream-w)}
+.story-bg .y{font-family:'Fraunces',serif;font-weight:500;font-size:2.4rem;line-height:1;color:var(--butter);
+ letter-spacing:-.02em;margin-bottom:.3rem}
+.story-bg .y em{font-style:italic}
+.story-bg .l{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
+ color:rgba(245,239,227,.75);line-height:1.5}
+
+/* GALLERY - bento */
+.gal{padding:7rem 3.5rem;background:var(--cream)}
+.gal-h{text-align:center;max-width:680px;margin:0 auto 4rem}
+.gal-h .eb{justify-content:center}
+.gal-h .eb::before{display:none}
+.gal-h .s-sub{margin:0 auto}
+.gal-grid{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:120px;gap:1rem;max-width:1300px;
+ margin:0 auto}
+.gi{overflow:hidden;border-radius:8px;background:var(--cream-d);position:relative;cursor:pointer}
+.gi img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+.gi:hover img{transform:scale(1.08)}
+.gi-cap{position:absolute;left:0;right:0;bottom:0;padding:1.1rem 1.3rem;color:var(--cream-w);
+ background:linear-gradient(to top,rgba(36,21,16,.85) 0%,transparent 100%);
+ transform:translateY(60%);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+.gi:hover .gi-cap{transform:translateY(0)}
+.gi-cap-l{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
+ color:var(--butter);font-weight:500;margin-bottom:.25rem}
+.gi-cap-n{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:1.05rem;color:var(--cream-w)}
+.gi.b1{grid-column:span 4;grid-row:span 4}
+.gi.b2{grid-column:span 4;grid-row:span 2}
+.gi.b3{grid-column:span 2;grid-row:span 2}
+.gi.b4{grid-column:span 2;grid-row:span 2}
+.gi.b5{grid-column:span 3;grid-row:span 3}
+.gi.b6{grid-column:span 3;grid-row:span 3}
+.gi.b7{grid-column:span 2;grid-row:span 3}
+
+/* QUOTE */
+.qt{padding:6rem 3.5rem;background:var(--olive);color:var(--cream-w);text-align:center;position:relative;
+ overflow:hidden}
+.qt::before{content:"\201C";position:absolute;top:1rem;left:50%;transform:translateX(-50%);
+ font-family:'Fraunces',serif;font-style:italic;font-size:14rem;line-height:1;color:var(--olive-d);font-weight:300;
+ pointer-events:none}
+.qt-q{font-family:'Fraunces',serif;font-style:italic;font-weight:400;font-size:clamp(1.5rem,2.6vw,2.2rem);
+ line-height:1.4;max-width:880px;margin:0 auto;color:var(--cream-w);position:relative;z-index:1;
+ letter-spacing:-.005em}
+.qt-q em{font-style:normal;color:var(--butter)}
+.qt-a{margin-top:2rem;font-family:'JetBrains Mono',monospace;font-size:.74rem;letter-spacing:.16em;
+ text-transform:uppercase;color:rgba(245,239,227,.7);position:relative;z-index:1}
+
+/* PROCESS - timeline */
+.proc{padding:7rem 3.5rem;background:var(--cream-w)}
+.proc-h{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:end;margin-bottom:4.5rem}
+.proc-h .s-sub{margin-bottom:0}
+.proc-tl{position:relative}
+.proc-tl::before{content:"";position:absolute;top:30px;left:0;right:0;height:1px;
+ background:repeating-linear-gradient(90deg,var(--cream-d) 0,var(--cream-d) 8px,transparent 8px,transparent 16px)}
+.proc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2.5rem;position:relative;z-index:1}
+.pr{position:relative}
+.pr-d{width:14px;height:14px;border-radius:50%;background:var(--cream-w);border:2px solid var(--terra);
+ margin-bottom:2rem;position:relative;transition:transform .3s,background .3s}
+.pr-d::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:1px solid var(--terra);
+ opacity:0;transition:opacity .3s,inset .3s}
+.pr:hover .pr-d{background:var(--terra);transform:scale(1.15)}
+.pr:hover .pr-d::after{opacity:.4;inset:-10px}
+.pr-n{font-family:'JetBrains Mono',monospace;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;
+ color:var(--terra);font-weight:500;margin-bottom:.7rem}
+.pr-h{font-family:'Fraunces',serif;font-weight:500;font-size:1.3rem;color:var(--cocoa);margin-bottom:.7rem;
+ letter-spacing:-.01em}
+.pr-h em{font-style:italic;color:var(--terra)}
+.pr-x{font-size:.88rem;color:var(--gray);line-height:1.7}
+
+/* REVIEWS */
+.rv{padding:7rem 3.5rem;background:var(--cream)}
+.rv-h{text-align:center;max-width:680px;margin:0 auto 3.5rem}
+.rv-h .eb{justify-content:center}
+.rv-h .eb::before{display:none}
+.rv-h .s-sub{margin:0 auto}
+.rv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;max-width:1240px;margin:0 auto}
+.rc{background:var(--cream-w);padding:2.5rem 2rem 2rem;display:flex;flex-direction:column;border-radius:14px;
+ transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;position:relative;
+ border:1px solid var(--cream-d)}
+.rc:hover{transform:translateY(-6px);box-shadow:0 20px 50px -15px rgba(36,21,16,.18);border-color:var(--butter)}
+.rc::before{content:"\201C";position:absolute;top:1rem;left:1.3rem;font-family:'Fraunces',serif;font-size:5.5rem;
+ line-height:1;color:var(--butter);opacity:.45;font-weight:400}
+.rc-st{color:var(--terra);font-size:.95rem;letter-spacing:.06em;margin-bottom:1rem;position:relative;z-index:1}
+.rc-tx{font-family:'Fraunces',serif;font-size:1rem;line-height:1.65;color:var(--ink);font-weight:400;flex:1;
+ margin-bottom:1.6rem;position:relative;z-index:1;letter-spacing:-.005em}
+.rc-au{display:flex;align-items:center;gap:.85rem;border-top:1px dashed var(--cream-d);padding-top:1.2rem}
+.rc-av{width:42px;height:42px;border-radius:50%;background:var(--cocoa);color:var(--butter);
+ display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:500;
+ font-size:.9rem;flex-shrink:0;letter-spacing:.02em}
+.rc-nm{font-family:'Inter',sans-serif;font-size:.86rem;font-weight:600;color:var(--cocoa);margin-bottom:.15rem}
+.rc-ct{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--gray);letter-spacing:.04em}
+
+/* CONTACT */
+.contact{padding:7rem 3.5rem;background:var(--cream-w)}
+.contact-h{margin-bottom:4rem;max-width:680px}
+.contact-grid{display:grid;grid-template-columns:.9fr 1.2fr;gap:3.5rem;align-items:start}
+.ci{background:var(--cocoa);color:var(--cream-w);padding:2.8rem;border-radius:14px;position:relative;
+ overflow:hidden}
+.ci::before{content:"";position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;
+ background:var(--olive);opacity:.4}
+.ci::after{content:"";position:absolute;bottom:-50px;left:-30px;width:160px;height:160px;border-radius:50%;
+ background:var(--terra);opacity:.18}
+.ci-in{position:relative;z-index:1}
+.ci h3{font-family:'Fraunces',serif;font-weight:500;font-size:1.5rem;color:var(--cream-w);margin-bottom:.5rem;
+ letter-spacing:-.01em}
+.ci h3 em{font-style:italic;color:var(--butter)}
+.ci-lede{font-size:.9rem;color:rgba(245,239,227,.72);line-height:1.7;margin-bottom:2rem;font-weight:300}
+.ci-r{display:grid;grid-template-columns:90px 1fr;gap:1rem;padding:1.2rem 0;
+ border-top:1px solid rgba(245,239,227,.1);align-items:start;transition:padding-left .3s}
+.ci-r:first-of-type{border-top:none;padding-top:0}
+.ci-r:hover{padding-left:.4rem}
+.ci-l{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;
+ color:var(--butter);font-weight:500;padding-top:.18rem}
+.ci-v{font-family:'Fraunces',serif;font-size:1rem;color:var(--cream-w);line-height:1.55}
+.ci-v a{color:var(--cream-w);text-decoration:none;transition:color .2s;border-bottom:1px solid transparent}
+.ci-v a:hover{color:var(--butter);border-bottom-color:var(--butter)}
+.fc{background:var(--cream);padding:2.8rem;border-radius:14px}
+.fc h3{font-family:'Fraunces',serif;font-weight:500;font-size:1.5rem;color:var(--cocoa);margin-bottom:.4rem;
+ letter-spacing:-.01em}
+.fc h3 em{font-style:italic;color:var(--terra)}
+.fc-p{font-size:.88rem;color:var(--gray);margin-bottom:1.8rem;line-height:1.65}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.frw{margin-bottom:1rem}
+.frw label{display:block;font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:500;
+ color:var(--cocoa);margin-bottom:.5rem;letter-spacing:.14em;text-transform:uppercase}
+.frw label .req{color:var(--terra)}
+.frw input,.frw select,.frw textarea{width:100%;padding:.95rem 1rem;border:1px solid var(--cream-d);
+ background:var(--cream-w);font-family:'Inter',sans-serif;font-size:.9rem;color:var(--ink);
+ border-radius:6px;transition:border-color .25s,box-shadow .25s}
+.frw input:focus,.frw select:focus,.frw textarea:focus{outline:none;border-color:var(--cocoa);
+ box-shadow:0 0 0 3px rgba(36,21,16,.08)}
+.frw textarea{resize:vertical;min-height:110px;font-family:inherit}
+.frw select{cursor:pointer;appearance:none;-webkit-appearance:none;
+ background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23241510' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.4rem}
+.f-sub{background:var(--cocoa);color:var(--cream-w);padding:1.05rem 2rem;border:none;border-radius:30px;
+ font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+ cursor:pointer;width:100%;transition:transform .3s cubic-bezier(.2,.8,.2,1);
+ position:relative;overflow:hidden;isolation:isolate}
+.f-sub::before{content:"";position:absolute;inset:0;background:var(--terra);transform:scaleX(0);
+ transform-origin:right;transition:transform .4s cubic-bezier(.2,.8,.2,1);z-index:-1}
+.f-sub:hover{transform:translateY(-2px)}
+.f-sub:hover::before{transform:scaleX(1);transform-origin:left}
+.f-note{font-size:.74rem;color:var(--gray);margin-top:.95rem;text-align:center;line-height:1.6;
+ font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
+.f-success{display:none;background:rgba(74,96,65,.1);border-left:3px solid var(--olive);color:var(--olive-d);
+ padding:1rem 1.2rem;font-size:.9rem;font-weight:500;margin-bottom:1rem;border-radius:4px}
+.f-success.show{display:block}
+
+/* FOOTER */
+footer{background:var(--cocoa);color:var(--cream-w);padding:5rem 3.5rem 1.8rem;position:relative;overflow:hidden}
+footer::before{content:"";position:absolute;top:-150px;right:-150px;width:400px;height:400px;border-radius:50%;
+ background:radial-gradient(circle,rgba(74,96,65,.3) 0%,transparent 70%)}
+.f-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:3rem;padding-bottom:3rem;
+ border-bottom:1px solid rgba(245,239,227,.08);position:relative;z-index:1}
+.f-brand{font-family:'Fraunces',serif;font-weight:500;font-size:2.4rem;color:var(--cream-w);letter-spacing:-.02em;
+ margin-bottom:.7rem;line-height:1}
+.f-brand em{font-style:italic;color:var(--butter)}
+.f-tg{font-size:.88rem;color:rgba(245,239,227,.7);line-height:1.65;max-width:300px;font-weight:300}
+.f-col h4{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;
+ color:var(--butter);font-weight:500;margin-bottom:1.3rem}
+.f-col a,.f-col p{color:rgba(245,239,227,.7);font-size:.86rem;text-decoration:none;line-height:1.95;
+ display:block;font-weight:300;transition:color .2s,padding-left .2s}
+.f-col a:hover{color:var(--butter);padding-left:4px}
+.f-bot{padding-top:1.8rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;
+ font-size:.74rem;color:rgba(245,239,227,.4);position:relative;z-index:1}
+.f-bot em{font-family:'Fraunces',serif;font-style:italic;font-weight:400;color:rgba(245,239,227,.7)}
+
+/* RESPONSIVE */
+@media(max-width:1080px){
+ .tb,nav,.hero,.menu,.split-l,.story,.gal,.qt,.proc,.rv,.contact,footer,.stats{padding-left:1.5rem;padding-right:1.5rem}
+ .hero{grid-template-columns:1fr;gap:3rem;padding-top:3.5rem;padding-bottom:3rem}
+ .hero-r{max-width:480px;margin:0 auto;width:100%}
+ .stats-grid{grid-template-columns:repeat(2,1fr);gap:2.5rem}
+ .split{grid-template-columns:1fr}
+ .split-r{height:380px}
+ .story-grid{grid-template-columns:1fr;gap:3rem}
+ .story-r{height:480px;max-width:520px;margin:0 auto;width:100%}
+ .gal-grid{grid-template-columns:repeat(6,1fr);grid-auto-rows:110px}
+ .gi.b1{grid-column:span 6;grid-row:span 3}
+ .gi.b2,.gi.b3,.gi.b4,.gi.b5,.gi.b6,.gi.b7{grid-column:span 3;grid-row:span 2}
+ .proc-h{grid-template-columns:1fr;gap:1.5rem}
+ .proc-grid{grid-template-columns:1fr 1fr;gap:3rem 2rem}
+ .proc-tl::before{display:none}
+ .menu-head{grid-template-columns:1fr;gap:1.2rem}
+ .m-row{grid-template-columns:50px 1fr 100px;gap:1rem}
+ .m-row .m-desc{display:none}
+}
+@media(max-width:760px){
+ nav ul{display:none}
+ .nav-r{gap:.8rem}
+ .stats-grid{grid-template-columns:1fr;gap:2rem}
+ .rv-grid,.f-grid{grid-template-columns:1fr}
+ .contact-grid{grid-template-columns:1fr}
+ .fg{grid-template-columns:1fr}
+ .gal-grid{grid-template-columns:repeat(4,1fr)}
+ .gi.b1{grid-column:span 4;grid-row:span 3}
+ .gi.b2,.gi.b3,.gi.b4,.gi.b5,.gi.b6,.gi.b7{grid-column:span 2;grid-row:span 2}
+ .proc-grid{grid-template-columns:1fr}
+ .m-img{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="tb">
+ <div class="tb-track">
+ <span>{{CITY}}</span><span>open tue&ndash;sun &middot; 6:30am to 4pm</span><span>now serving the autumn menu</span>
+ <span class="sep">&#9670;</span>
+ <span>fresh pastries daily</span><span>locally roasted coffee</span><span>good music &amp; slow afternoons</span>
+ <span class="sep">&#9670;</span>
+ <span>{{CITY}}</span><span>open tue&ndash;sun &middot; 6:30am to 4pm</span><span>now serving the autumn menu</span>
+ <span class="sep">&#9670;</span>
+ <span>fresh pastries daily</span><span>locally roasted coffee</span><span>good music &amp; slow afternoons</span>
+ <span class="sep">&#9670;</span>
+ </div>
+</div>
+
+<nav id="nav">
+ <a class="brand" href="#top">
+ <div class="brand-mk"><svg viewBox="0 0 24 24"><path d="M12 2C7 2 4 6 4 11c0 5 3 8 4 9 .5.5 1 1 1 2h6c0-1 .5-1.5 1-2 1-1 4-4 4-9 0-5-3-9-8-9zm0 4c2 0 4 2 4 5 0 2-1 4-2 5l-1-2c1-.5 1.5-1.5 1.5-3 0-1.5-1-2.5-2.5-2.5z"/></svg></div>
+ <div>
+ <span class="brand-tx">{{NAME}}</span>
+ <span class="brand-tg">caf&eacute; &middot; {{CITY}}</span>
+ </div>
+ </a>
+ <ul>
+ <li><a href="#menu">Menu</a></li>
+ <li><a href="#story">Our Story</a></li>
+ <li><a href="#gallery">Gallery</a></li>
+ <li><a href="#reviews">Reviews</a></li>
+ <li><a href="#contact">Visit</a></li>
+ </ul>
+ <div class="nav-r">
+ <a href="tel:{{PHONE}}" class="nav-ph">{{PHONE}}</a>
+ <a href="#contact" class="nav-btn"><span>Visit Us</span></a>
+ </div>
+</nav>
+
+<section class="hero" id="top">
+ <div class="hero-l">
+ <div class="hero-eb">caf&eacute; &middot; pastry counter &middot; roastery</div>
+ <h1 class="hero-h">
+ <span class="word w1">Slow</span> <span class="word w2">mornings,</span><br>
+ <span class="word w3">strong</span> <span class="word w4">coffee,</span> <span class="word w5"><em>better</em></span><br>
+ <span class="word w6"><em>bread.</em></span>
+ </h1>
+ <p class="hero-p">A neighborhood caf&eacute; in {{CITY}} pouring thoughtfully sourced coffee, hand-laminated pastries, and an honest all-day menu &mdash; for people who like to take their time.</p>
+ <div class="hero-btns">
+ <a href="#menu" class="btn-p"><span>View the Menu</span> <span class="arr">&rarr;</span></a>
+ <a href="#contact" class="btn-g">Find us &rarr;</a>
+ </div>
+ <div class="hero-scroll">
+ <div class="hero-scroll-line"></div>
+ <span>scroll to explore</span>
+ </div>
+ </div>
+ <div class="hero-r">
+ <div class="hero-fr">
+ <img src="https://images.pexels.com/photos/30331361/pexels-photo-30331361.jpeg?auto=compress&cs=tinysrgb&w=1100" alt="Pastry in sunlit cafe">
+ </div>
+ <div class="hero-tag">est. 2013</div>
+ <div class="hero-card">
+ <div class="lab">Now Brewing</div>
+ <div class="nam">Single&#8209;origin <em>Ethiopia Yirgacheffe</em></div>
+ <div class="met">
+ <span class="met-l">light roast</span>
+ <span class="met-r">$5 / cup</span>
+ </div>
+ </div>
+ </div>
+</section>
+
+<section class="stats">
+ <div class="stats-grid">
+ <div class="st reveal" data-d="1"><div class="st-n" data-count="12"><span>0</span><em>+</em></div><div class="st-l">Years in Business</div></div>
+ <div class="st reveal" data-d="2"><div class="st-n"><span>6:30</span><span class="sm">am</span></div><div class="st-l">Doors Open Daily</div></div>
+ <div class="st reveal" data-d="3"><div class="st-n" data-count="49"><span>0</span><em>/50</em></div><div class="st-l">Google Rating</div></div>
+ <div class="st reveal" data-d="4"><div class="st-n" data-count="100"><span>0</span><em>%</em></div><div class="st-l">House&#8209;Made &amp; Local</div></div>
+ </div>
+</section>
+
+<div class="marq">
+ <div class="marq-trk">
+ <span>fresh sourdough</span><span>flat whites</span><span>hand laminated</span><span>local milk</span><span>seasonal fruit</span><span>made by hand</span>
+ <span>fresh sourdough</span><span>flat whites</span><span>hand laminated</span><span>local milk</span><span>seasonal fruit</span><span>made by hand</span>
+ </div>
+</div>
+
+<section class="menu" id="menu">
+ <div class="menu-head">
+ <div class="reveal">
+ <div class="eb">The Menu</div>
+ <h2>What we&rsquo;re <em>serving</em> today.</h2>
+ <p class="s-sub">A small, considered menu that changes with the season &mdash; coffee from local roasters, pastries laminated by hand, breakfast and lunch made from scratch.</p>
+ </div>
+ <div class="menu-num reveal" data-d="1">No. <strong>01 / 06</strong></div>
+ </div>
+ <div class="menu-list">
+ <div class="m-row reveal" data-d="1" data-img="https://images.pexels.com/photos/3892469/pexels-photo-3892469.jpeg?auto=compress&cs=tinysrgb&w=500">
+ <div class="m-num">i.</div>
+ <div class="m-name">Butter <em>Croissant</em></div>
+ <div class="m-desc">Hand&#8209;laminated, 72&#8209;hour cold ferment, baked twice each morning. The way it&rsquo;s supposed to be.</div>
+ <div class="m-pr">$4.50</div>
+ </div>
+ <div class="m-row reveal" data-d="2" data-img="https://images.pexels.com/photos/32802349/pexels-photo-32802349.jpeg?auto=compress&cs=tinysrgb&w=500">
+ <div class="m-num">ii.</div>
+ <div class="m-name">The <em>Slow Morning</em></div>
+ <div class="m-desc">A double espresso, a pastry from the case, and a glass of fresh orange juice. Our most ordered.</div>
+ <div class="m-pr">$11</div>
+ </div>
+ <div class="m-row reveal" data-d="3" data-img="https://images.pexels.com/photos/36455119/pexels-photo-36455119.jpeg?auto=compress&cs=tinysrgb&w=500">
+ <div class="m-num">iii.</div>
+ <div class="m-name">Macaron <em>Selection</em></div>
+ <div class="m-desc">Twelve seasonal flavors made fresh each Friday. Take a box home or pair with an afternoon espresso.</div>
+ <div class="m-pr">$3 ea</div>
+ </div>
+ <div class="m-row reveal" data-d="4" data-img="https://images.pexels.com/photos/3892468/pexels-photo-3892468.jpeg?auto=compress&cs=tinysrgb&w=500">
+ <div class="m-num">iv.</div>
+ <div class="m-name">Seasonal <em>Muffin</em></div>
+ <div class="m-desc">Whatever fruit is at the farm this week, baked into a tender muffin with a crackly streusel top.</div>
+ <div class="m-pr">$4</div>
+ </div>
+ <div class="m-row reveal" data-d="5" data-img="https://images.pexels.com/photos/31228825/pexels-photo-31228825.jpeg?auto=compress&cs=tinysrgb&w=500">
+ <div class="m-num">v.</div>
+ <div class="m-name">Pastry Box <em>for Six</em></div>
+ <div class="m-desc">Six house pastries, baker&rsquo;s choice. Perfect for the office, brunch, or anyone who deserves a good morning.</div>
+ <div class="m-pr">$28</div>
+ </div>
+ <div class="m-row reveal" data-d="6" data-img="https://images.pexels.com/photos/792406/pexels-photo-792406.jpeg?auto=compress&cs=tinysrgb&w=500">
+ <div class="m-num">vi.</div>
+ <div class="m-name">Loaf of <em>the Week</em></div>
+ <div class="m-desc">Each week we bake a different bread &mdash; sourdough, country rye, walnut, focaccia. Take one home before they&rsquo;re gone.</div>
+ <div class="m-pr">$8</div>
+ </div>
+ </div>
+</section>
+
+<div class="m-img" id="hoverImg"><img src="" alt=""></div>
+
+<section class="split">
+ <div class="split-l">
+ <div class="reveal">
+ <div class="eb" style="color:var(--butter)">The Room</div>
+ <h2>Mornings on the patio, afternoons at <em>the long table.</em></h2>
+ <p>A wood&#8209;and&#8209;cream room with real plants, big windows, and slow music. Come work for an hour. Stay for three. The Wi&#8209;Fi is free and we won&rsquo;t hide the password.</p>
+ <a href="#contact" class="btn-p"><span>Find the Caf&eacute;</span> <span class="arr">&rarr;</span></a>
+ </div>
+ </div>
+ <div class="split-r">
+ <img src="https://images.pexels.com/photos/17486840/pexels-photo-17486840.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="The cafe room">
+ </div>
+</section>
+
+<section class="story" id="story">
+ <div class="story-grid">
+ <div class="story-l reveal">
+ <div class="eb">Our Story</div>
+ <h2>A caf&eacute; built on care, not <em>convenience.</em></h2>
+ <p class="s-sub">We opened {{NAME}} over a decade ago because {{CITY}} deserved a real caf&eacute; &mdash; one with thoughtful coffee, honest food, and a room you actually want to sit in. Everything on our menu, from the croissants to the cold brew, is made with intention.</p>
+ <div class="story-pts">
+ <div class="s-pt"><div class="s-pt-n">i.</div><div><div class="s-pt-h">Single&#8209;origin coffee, roasted weekly</div><div class="s-pt-d">We work with three small&#8209;batch roasters across California, rotating a single&#8209;origin pour&#8209;over and a seasonal espresso blend each month.</div></div></div>
+ <div class="s-pt"><div class="s-pt-n">ii.</div><div><div class="s-pt-h">Pastries laminated by hand, every day</div><div class="s-pt-d">Our pastry team starts before 4am. No commercial mixes, no shortcuts &mdash; just butter, flour, time, and patience.</div></div></div>
+ <div class="s-pt"><div class="s-pt-n">iii.</div><div><div class="s-pt-h">A menu that changes with the season</div><div class="s-pt-d">We rewrite our menu four times a year around what&rsquo;s in season locally &mdash; stone fruit in summer, citrus in winter, always something new.</div></div></div>
+ <div class="s-pt"><div class="s-pt-n">iv.</div><div><div class="s-pt-h">A room worth lingering in</div><div class="s-pt-d">Wood, light, real plants, and free Wi&#8209;Fi we don&rsquo;t hide. Come for ten minutes or stay all afternoon &mdash; we built this for both.</div></div></div>
+ </div>
+ </div>
+ <div class="story-r reveal" data-d="2">
+ <div class="story-im m"><img src="https://images.pexels.com/photos/34844491/pexels-photo-34844491.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Elegant pastries"></div>
+ <div class="story-im s"><img src="https://images.pexels.com/photos/16543351/pexels-photo-16543351.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Pastry"></div>
+ <div class="story-bg">
+ <div class="y">20<em>13</em></div>
+ <div class="l">Family owned<br>{{CITY}}</div>
+ </div>
+ </div>
+ </div>
+</section>
+
+<section class="gal" id="gallery">
+ <div class="gal-h reveal">
+ <div class="eb">From the Counter</div>
+ <h2>A look around the <em>caf&eacute;.</em></h2>
+ <p class="s-sub">A few moments from the case, the bar, and the back kitchen &mdash; from rustic loaves to celebration cakes to morning espresso.</p>
+ </div>
+ <div class="gal-grid">
+ <div class="gi b1 reveal" data-d="1"><img src="https://images.pexels.com/photos/792406/pexels-photo-792406.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Sourdough"><div class="gi-cap"><div class="gi-cap-l">Daily Bake</div><div class="gi-cap-n">House sourdough</div></div></div>
+ <div class="gi b2 reveal" data-d="2"><img src="https://images.pexels.com/photos/26711711/pexels-photo-26711711.jpeg?auto=compress&cs=tinysrgb&w=700" alt="Cinnamon rolls"><div class="gi-cap"><div class="gi-cap-l">Weekend Special</div><div class="gi-cap-n">Cinnamon morning rolls</div></div></div>
+ <div class="gi b3 reveal" data-d="3"><img src="https://images.pexels.com/photos/7381533/pexels-photo-7381533.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Fruit cake"><div class="gi-cap"><div class="gi-cap-l">From the Case</div><div class="gi-cap-n">Summer fruit cake</div></div></div>
+ <div class="gi b4 reveal" data-d="3"><img src="https://images.pexels.com/photos/34364452/pexels-photo-34364452.jpeg?auto=compress&cs=tinysrgb&w=700" alt="German pastries"><div class="gi-cap"><div class="gi-cap-l">Old&#8209;World</div><div class="gi-cap-n">German pastries</div></div></div>
+ <div class="gi b5 reveal" data-d="4"><img src="https://images.pexels.com/photos/17486840/pexels-photo-17486840.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Chocolate cake"><div class="gi-cap"><div class="gi-cap-l">Single&#8209;Origin</div><div class="gi-cap-n">Chocolate slice</div></div></div>
+ <div class="gi b6 reveal" data-d="5"><img src="https://images.pexels.com/photos/19328373/pexels-photo-19328373.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Pastry counter"><div class="gi-cap"><div class="gi-cap-l">The Bar</div><div class="gi-cap-n">Pastry counter</div></div></div>
+ <div class="gi b7 reveal" data-d="6"><img src="https://images.pexels.com/photos/36943895/pexels-photo-36943895.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Rosca"><div class="gi-cap"><div class="gi-cap-l">Tradition</div><div class="gi-cap-n">Rosca de reyes</div></div></div>
+ </div>
+</section>
+
+<section class="qt">
+ <p class="qt-q reveal">We didn&rsquo;t open {{NAME}} to be the busiest caf&eacute; in {{CITY}}. We opened it to be the <em>one you actually look forward to.</em></p>
+ <div class="qt-a reveal" data-d="1">&mdash; Sofia &amp; Marco, owners</div>
+</section>
+
+<section class="proc">
+ <div class="proc-h">
+ <div class="reveal">
+ <div class="eb">How It Works</div>
+ <h2>Order ahead, walk in, or <em>linger awhile.</em></h2>
+ </div>
+ <p class="s-sub reveal" data-d="1">However you like to caf&eacute; &mdash; we&rsquo;ve made it easy to get what you want, when you want it.</p>
+ </div>
+ <div class="proc-tl">
+ <div class="proc-grid">
+ <div class="pr reveal" data-d="1"><div class="pr-d"></div><div class="pr-n">i. arrive</div><div class="pr-h">Walk in or <em>order ahead</em></div><div class="pr-x">Pop in any morning, or place your order online for pickup. We&rsquo;ll have it ready when you walk through the door.</div></div>
+ <div class="pr reveal" data-d="2"><div class="pr-d"></div><div class="pr-n">ii. order</div><div class="pr-h">Pick what <em>looks good</em></div><div class="pr-x">A small seasonal menu, a rotating pastry case, and a barista happy to make a recommendation if you can&rsquo;t decide.</div></div>
+ <div class="pr reveal" data-d="3"><div class="pr-d"></div><div class="pr-n">iii. wait</div><div class="pr-h">We make it <em>fresh</em></div><div class="pr-x">Espresso pulled to order, pastries warmed, breakfast plated &mdash; all by people who actually care how it tastes.</div></div>
+ <div class="pr reveal" data-d="4"><div class="pr-d"></div><div class="pr-n">iv. stay</div><div class="pr-h">Or <em>take it to go</em></div><div class="pr-x">Find a spot at the counter, the patio, or the long table. Or grab it and run &mdash; whatever your morning needs.</div></div>
+ </div>
+ </div>
+</section>
+
+<section class="rv" id="reviews">
+ <div class="rv-h reveal">
+ <div class="eb">Kind Words</div>
+ <h2>What our regulars are <em>saying.</em></h2>
+ <p class="s-sub">Real reviews from the locals who start their morning with us.</p>
+ </div>
+ <div class="rv-grid">
+ <div class="rc reveal" data-d="1">
+ <div class="rc-st">★★★★★</div>
+ <p class="rc-tx">The best pour&#8209;over in {{CITY}}, hands down. Quiet, beautifully designed, and they remember how I take it. I get more work done at {{NAME}} than I do at home.</p>
+ <div class="rc-au"><div class="rc-av">EM</div><div><div class="rc-nm">Elena Marquez</div><div class="rc-ct">{{CITY}} &middot; weekly regular</div></div></div>
+ </div>
+ <div class="rc reveal" data-d="2">
+ <div class="rc-st">★★★★★</div>
+ <p class="rc-tx">We hosted our wedding brunch here last spring &mdash; the team handled everything beautifully. Guests are still talking about the croissants. Worth every penny.</p>
+ <div class="rc-au"><div class="rc-av">DK</div><div><div class="rc-nm">David &amp; Kara Liu</div><div class="rc-ct">{{CITY}} &middot; private event</div></div></div>
+ </div>
+ <div class="rc reveal" data-d="3">
+ <div class="rc-st">★★★★★</div>
+ <p class="rc-tx">{{NAME}} is the kind of caf&eacute; you&rsquo;d find in Brooklyn or Lisbon &mdash; not in {{CITY}}. Genuinely thoughtful coffee, beautiful pastries, the staff is wonderful. A treasure.</p>
+ <div class="rc-au"><div class="rc-av">MR</div><div><div class="rc-nm">Marco Rivera</div><div class="rc-ct">{{CITY}} &middot; daily visitor</div></div></div>
+ </div>
+ </div>
+</section>
+
+<section class="contact" id="contact">
+ <div class="contact-h reveal">
+ <div class="eb">Visit Us</div>
+ <h2>Stop by, give us a call, or <em>send a note.</em></h2>
+ <p class="s-sub">We&rsquo;re here most days of the week with fresh coffee, fresh pastries, and a quiet table or two. The best way to know us is to come in &mdash; but if you&rsquo;ve got a question, leave us a note.</p>
+ </div>
+ <div class="contact-grid">
+ <div class="ci reveal">
+ <div class="ci-in">
+ <h3>The <em>caf&eacute;</em></h3>
+ <p class="ci-lede">Visit us in {{CITY}}, with plenty of seating and a patio for when the weather is just right (most of the year).</p>
+ <div class="ci-r"><div class="ci-l">Address</div><div class="ci-v">78&ndash;200 Main Street<br>Suite 4, {{CITY}}</div></div>
+ <div class="ci-r"><div class="ci-l">Hours</div><div class="ci-v">Tue&ndash;Fri 6:30am&ndash;4pm<br>Sat&ndash;Sun 7am&ndash;3pm</div></div>
+ <div class="ci-r"><div class="ci-l">Phone</div><div class="ci-v"><a href="tel:{{PHONE}}">{{PHONE}}</a></div></div>
+ <div class="ci-r"><div class="ci-l">Email</div><div class="ci-v"><a href="mailto:{{EMAIL}}">{{EMAIL}}</a></div></div>
+ </div>
+ </div>
+ <div class="fc reveal" data-d="1">
+ <h3>Drop us a <em>note.</em></h3>
+ <p class="fc-p">A question, a hello, a slow afternoon thought. Whatever it is, leave a note and we&rsquo;ll write back when the espresso machine quiets down.</p>
+ <div class="f-success" id="formSuccess">Thank you &mdash; we got your note. We&rsquo;ll write back when the espresso machine quiets down.</div>
+ <form id="estimateForm" onsubmit="handleEstimate(event)" novalidate>
+ <div class="fg">
+ <div class="frw"><label for="fName">Your Name <span class="req">*</span></label><input type="text" id="fName" required autocomplete="name"></div>
+ <div class="frw"><label for="fEmail">Email <span class="req">*</span></label><input type="email" id="fEmail" required autocomplete="email"></div>
+ </div>
+ <div class="frw"><label for="fDetails">Your note</label>
+ <textarea id="fDetails" placeholder="Whatever&rsquo;s on your mind &mdash; a question, a hello, a kind word, a curious ask."></textarea>
+ </div>
+ <button type="submit" class="f-sub">Send Your Note</button>
+ <p class="f-note">we&rsquo;ll never share your info, and we won&rsquo;t add you to a mailing list</p>
+ </form>
+ </div>
+ </div>
+</section>
+
+<footer>
+ <div class="f-grid">
+ <div>
+ <div class="f-brand">{{NAME}}<em>.</em></div>
+ <p class="f-tg">A neighborhood caf&eacute; in {{CITY}}. Thoughtful coffee, honest food, and a room worth lingering in &mdash; since 2013.</p>
+ </div>
+ <div class="f-col">
+ <h4>Visit</h4>
+ <a href="#contact">Hours &amp; Address</a>
+ <a href="tel:{{PHONE}}">{{PHONE}}</a>
+ <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>
+ </div>
+ <div class="f-col">
+ <h4>Explore</h4>
+ <a href="#menu">Menu</a>
+ <a href="#story">Our Story</a>
+ <a href="#gallery">Gallery</a>
+ <a href="#reviews">Reviews</a>
+ </div>
+ <div class="f-col">
+ <h4>Follow Along</h4>
+ <a href="#contact">Instagram</a>
+ <a href="#contact">Newsletter</a>
+ <a href="#contact">Spotify Playlist</a>
+ <a href="#contact">Say Hi</a>
+ </div>
+ </div>
+ <div class="f-bot">
+ <div>&copy; 2025 {{NAME}} &middot; All rights reserved</div>
+ <div><em>made slowly, in {{CITY}}</em></div>
+ </div>
+</footer>
+
+<script>
+// Scroll reveal
+const io=new IntersectionObserver((entries)=>{
+ entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
+},{threshold:.12,rootMargin:'0px 0px -50px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+// Animated counters
+const cio=new IntersectionObserver((entries)=>{
+ entries.forEach(e=>{
+ if(!e.isIntersecting)return;
+ const el=e.target,target=parseFloat(el.dataset.count),span=el.querySelector('span');
+ if(!target||!span)return;
+ const dur=1400,start=performance.now();
+ const tick=now=>{
+ const p=Math.min((now-start)/dur,1),eased=1-Math.pow(1-p,3),val=Math.round(target*eased);
+ span.textContent=target>=49&&target<50?(target*eased).toFixed(1):val;
+ if(p<1)requestAnimationFrame(tick);else span.textContent=target>=49&&target<50?target.toFixed(1):target;
+ };
+ requestAnimationFrame(tick);
+ cio.unobserve(el);
+ });
+},{threshold:.5});
+document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
+
+// Nav shrink
+const navEl=document.getElementById('nav');
+window.addEventListener('scroll',()=>{
+ if(window.scrollY>30)navEl.classList.add('shrunk');else navEl.classList.remove('shrunk');
+},{passive:true});
+
+// Menu hover image preview (desktop only)
+if(window.matchMedia('(min-width:1080px)').matches){
+ const hov=document.getElementById('hoverImg'),hovImg=hov.querySelector('img');
+ document.querySelectorAll('.m-row').forEach(row=>{
+ row.addEventListener('mouseenter',()=>{const src=row.dataset.img;if(!src)return;hovImg.src=src;hov.classList.add('show')});
+ row.addEventListener('mouseleave',()=>hov.classList.remove('show'));
+ row.addEventListener('mousemove',(e)=>{
+ const w=hov.offsetWidth,h=hov.offsetHeight;
+ hov.style.left=Math.min(e.clientX+24,window.innerWidth-w-20)+'px';
+ hov.style.top=Math.min(Math.max(e.clientY-h/2,20),window.innerHeight-h-20)+'px';
+ });
+ });
+}
+
+function handleEstimate(e){
+ e.preventDefault();
+ const f=document.getElementById('estimateForm');
+ const name=document.getElementById('fName').value.trim();
+ const email=document.getElementById('fEmail').value.trim();
+ if(!name||!email){alert('Please fill in your name and email.');return false;}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Please enter a valid email address.');return false;}
+ document.getElementById('formSuccess').classList.add('show');
+ f.reset();
+ document.getElementById('formSuccess').scrollIntoView({behavior:'smooth',block:'center'});
+ return false;
+}
+</script>
+
+</body>
+</html>
