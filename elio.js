@@ -218,12 +218,12 @@ const REGIONS = [
 ];
 
 const INDUSTRIES = [
-  { label: 'Cafe',          query: 'cafe' },
-  { label: 'Bakery',        query: 'bakery' },
-  { label: 'Plumbing',      query: 'plumber' },
-  { label: 'Electrician',   query: 'electrician' },
-  { label: 'Pool Cleaning', query: 'pool service' },
-  { label: 'Landscaping',   query: 'landscaping' },
+  { label: 'Cafe',          osm: '"amenity"="cafe"' },
+  { label: 'Bakery',        osm: '"shop"="bakery"' },
+  { label: 'Plumbing',      osm: '"craft"="plumber"' },
+  { label: 'Electrician',   osm: '"craft"="electrician"' },
+  { label: 'Pool Cleaning', osm: '"craft"="pool_construction"' },
+  { label: 'Landscaping',   osm: '"craft"="gardener"' },
 ];
 
 const INDUSTRY_TEMPLATES = {
@@ -412,20 +412,39 @@ function uid(){
 function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
 
 async function fetchFoursquare(city, industry){
-  const params = new URLSearchParams({
-    ll: `${city.lat},${city.lon}`,
-    radius: String(RADIUS_M),
-    query: industry.query,
-    limit: '50',
-   fields: 'fsq_id,name,tel,website,categories,location,chains,rating,photos',
-  });
-    const resp = await fetch(`https://places-api.foursquare.com/places/search?${params}`, {
+  const overpassQuery = `
+    [out:json][timeout:25];
+    (
+      node[${industry.osm}](around:${RADIUS_M},${city.lat},${city.lon});
+      way[${industry.osm}](around:${RADIUS_M},${city.lat},${city.lon});
+    );
+    out center;
+  `;
+  const resp = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    body: 'data=' + encodeURIComponent(overpassQuery),
     headers: {
-      'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
-      'X-Places-Api-Version': '2025-06-17',
-      'Accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'trukoder-elio/0.1 (lead-finder)',
     },
   });
+  if(!resp.ok){
+    throw new Error(`Overpass returned ${resp.status}`);
+  }
+  const data = await resp.json();
+  return (data.elements || []).map(el => {
+    const t = el.tags || {};
+    const isChain = t.brand || t['brand:wikipedia'];
+    return {
+      name: t.name,
+      tel: t.phone || t['contact:phone'] || null,
+      website: t.website || t['contact:website'] || null,
+      chains: isChain ? [{ name: t.brand || 'chain' }] : [],
+      rating: null,
+      photos: [],
+    };
+  });
+}
   if(!resp.ok){
     const body = await resp.text();
     throw new Error(`Foursquare returned ${resp.status}: ${body.slice(0, 200)}`);
