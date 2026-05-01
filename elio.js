@@ -299,12 +299,6 @@ async function netlifyCreateSite(name){
     },
     body: JSON.stringify({ name }),
   });
-  if(!resp.ok){
-    const t = await resp.text();
-    throw new Error(`Netlify site create failed (${resp.status}): ${t.slice(0,200)}`);
-  }
-  return await resp.json();
-}
 
 async function netlifyCreateSiteWithFallback(baseSlug){
   const tries = [baseSlug, `${baseSlug}-${Math.random().toString(36).slice(2,5)}`, `${baseSlug}-${Date.now().toString(36).slice(-4)}`];
