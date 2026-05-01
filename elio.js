@@ -473,28 +473,16 @@ async function logHeartbeat(message){
   await sb.from('elio_heartbeat').insert({ message });
 }
 
-async function main(){
-  const startedAt = new Date().toISOString();
-  console.log('Elio waking up at', startedAt);
-
-  const { names: existingNames, recentNotes } = await loadExisting();
-
-    const now = new Date();
-  const slotIndex = Math.floor((now.getUTCHours() * 60 + now.getUTCMinutes()) / 30);
-  const region = REGIONS[slotIndex % REGIONS.length];
+async function scanRegion(region, existingNames){
   const regionCities = CITIES.filter(c => c.region === region);
-  console.log(`Region this run: ${region} (${regionCities.length} cities)`);
-
   const combos = [];
   for(const city of regionCities){
     for(const industry of INDUSTRIES){
       combos.push({ city, industry });
     }
   }
-  console.log(`Scanning ${combos.length} city × industry combos...`);
 
-  const allCandidates = [];
-
+  const found = [];
   for(let i = 0; i < combos.length; i += BATCH_SIZE){
     const batch = combos.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(batch.map(async ({ city, industry }) => {
@@ -506,7 +494,6 @@ async function main(){
         return { city, industry, places: [] };
       }
     }));
-
     for(const { city, industry, places } of results){
       const fresh = places
         .filter(isCandidate)
@@ -518,19 +505,42 @@ async function main(){
         const lower = p.name.toLowerCase();
         if(existingNames.has(lower)) continue;
         existingNames.add(lower);
-        allCandidates.push({ place: p, city, industry });
+        found.push({ place: p, city, industry });
       }
     }
-
     if(i + BATCH_SIZE < combos.length){
       await new Promise(r => setTimeout(r, 300));
     }
   }
+  return found;
+}
 
-  console.log(`Total new candidates: ${allCandidates.length}`);
+async function main(){
+  console.log('Elio waking up at', new Date().toISOString());
+  const { names: existingNames, recentNotes } = await loadExisting();
+
+  const now = new Date();
+  const slotIndex = Math.floor((now.getUTCHours() * 60 + now.getUTCMinutes()) / 30);
+  const MAX_REGIONS_PER_RUN = 5;
+
+  let allCandidates = [];
+  let regionsTried = [];
+
+  for(let attempt = 0; attempt < MAX_REGIONS_PER_RUN; attempt++){
+    const region = REGIONS[(slotIndex + attempt) % REGIONS.length];
+    regionsTried.push(region);
+    console.log(`Trying region: ${region}`);
+    const found = await scanRegion(region, existingNames);
+    if(found.length > 0){
+      allCandidates = found;
+      console.log(`Found ${found.length} fresh in ${region}.`);
+      break;
+    }
+    console.log(`${region} dry, falling through...`);
+  }
 
   if(allCandidates.length === 0){
-    await logHeartbeat(`Scanned ${region} (${combos.length} combos), no new leads.`);
+    await logHeartbeat(`Scanned ${regionsTried.join(', ')} — no new leads anywhere.`);
     return;
   }
 
@@ -561,9 +571,9 @@ async function main(){
     process.exit(1);
   }
 
-  console.log(`Inserted ${rows.length} drafts:`);
+  console.log(`Inserted ${rows.length} drafts.`);
   rows.forEach(r => console.log(`  - ${r.name} (${r.city}, ${r.industry})`));
-  await logHeartbeat(`Found ${rows.length} new leads in ${region}.`);
+  await logHeartbeat(`Found ${rows.length} new leads (tried: ${regionsTried.join(', ')}).`);
 }
 
 async function run(){
