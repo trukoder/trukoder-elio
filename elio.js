@@ -291,12 +291,13 @@ async function buildDemoHtml(lead){
 }
 
 async function netlifyCreateSite(name){
-   const resp = await fetch(`https://places-api.foursquare.com/places/search?${params}`, {
+   const resp = await fetch('https://api.netlify.com/api/v1/sites', {
+    method: 'POST',
     headers: {
-      'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
-      'X-Places-Api-Version': '2025-06-17',
-      'Accept': 'application/json',
+      'Authorization': `Bearer ${NETLIFY_TOKEN}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ name }),
   });
   if(!resp.ok){
     const t = await resp.text();
@@ -418,9 +419,10 @@ async function fetchFoursquare(city, industry){
     limit: '50',
    fields: 'fsq_id,name,tel,website,categories,location,chains,rating,photos',
   });
-  const resp = await fetch(`https://api.foursquare.com/v3/places/search?${params}`, {
+    const resp = await fetch(`https://places-api.foursquare.com/places/search?${params}`, {
     headers: {
-      'Authorization': FOURSQUARE_API_KEY,
+      'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
+      'X-Places-Api-Version': '2025-06-17',
       'Accept': 'application/json',
     },
   });
