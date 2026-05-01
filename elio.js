@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { readFile } from 'node:fs/promises';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -365,6 +364,12 @@ async function netlifyDeployHtml(siteId, html){
 async function processPendingDemos(){
   if(!NETLIFY_TOKEN){
     console.log('No NETLIFY_TOKEN — skipping demo processing.');
+    return;
+  }
+    const { count: demoCount } = await sb.from('leads').select('*', { count: 'exact', head: true }).not('demo_link', 'is', null);
+  if(demoCount !== null && demoCount >= 15){
+    console.log(`Demo cap reached (${demoCount} already built). Skipping new demos.`);
+    await logHeartbeat(`Demo cap reached (${demoCount}/15). Pausing demo creation.`);
     return;
   }
   const { data: pending, error } = await sb.from('leads')
