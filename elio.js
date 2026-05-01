@@ -439,14 +439,7 @@ async function fetchFoursquare(city, industry){
     };
   });
 }
-  if(!resp.ok){
-    const body = await resp.text();
-    throw new Error(`Foursquare returned ${resp.status}: ${body.slice(0, 200)}`);
-  }
-  const data = await resp.json();
-  return data.results || [];
-}
-
+  
 function isCandidate(p){
   if(!p.name) return false;
   if(!p.tel) return false;
