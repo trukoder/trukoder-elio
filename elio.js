@@ -3,19 +3,17 @@ import { readFile } from 'node:fs/promises';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const FOURSQUARE_API_KEY = process.env.FOURSQUARE_API_KEY;
 const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN;
 
-if (!SUPABASE_URL || !SUPABASE_KEY || !FOURSQUARE_API_KEY) {
-  console.error('Missing required environment variables (SUPABASE_URL, SUPABASE_KEY, FOURSQUARE_API_KEY).');
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('Missing required environment variables (SUPABASE_URL, SUPABASE_KEY).');
   process.exit(1);
 }
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CITIES = [
-  // === CALIFORNIA ===
-  // LA Metro
+  // California — LA Metro
   { name: 'Los Angeles',        region: 'LA Metro',     lat: 34.0522, lon: -118.2437 },
   { name: 'Long Beach',         region: 'LA Metro',     lat: 33.7701, lon: -118.1937 },
   { name: 'Anaheim',            region: 'LA Metro',     lat: 33.8366, lon: -117.9143 },
@@ -27,7 +25,7 @@ const CITIES = [
   { name: 'Pomona',             region: 'LA Metro',     lat: 34.0551, lon: -117.7500 },
   { name: 'Huntington Beach',   region: 'LA Metro',     lat: 33.6595, lon: -117.9988 },
 
-  // SoCal Inland
+  // California — SoCal Inland (incl. Coachella Valley)
   { name: 'San Diego',          region: 'SoCal Inland', lat: 32.7157, lon: -117.1611 },
   { name: 'Chula Vista',        region: 'SoCal Inland', lat: 32.6401, lon: -117.0842 },
   { name: 'Oceanside',          region: 'SoCal Inland', lat: 33.1959, lon: -117.3795 },
@@ -46,7 +44,7 @@ const CITIES = [
   { name: 'Desert Hot Springs', region: 'SoCal Inland', lat: 33.9611, lon: -116.5017 },
   { name: 'Thermal',            region: 'SoCal Inland', lat: 33.6403, lon: -116.1392 },
 
-  // Bay Area
+  // California — Bay Area
   { name: 'San Francisco',      region: 'Bay Area',     lat: 37.7749, lon: -122.4194 },
   { name: 'San Jose',           region: 'Bay Area',     lat: 37.3382, lon: -121.8863 },
   { name: 'Oakland',            region: 'Bay Area',     lat: 37.8044, lon: -122.2712 },
@@ -60,7 +58,7 @@ const CITIES = [
   { name: 'Santa Rosa',         region: 'Bay Area',     lat: 38.4404, lon: -122.7141 },
   { name: 'Fairfield',          region: 'Bay Area',     lat: 38.2494, lon: -122.0399 },
 
-  // Central CA
+  // California — Central + Coastal
   { name: 'Sacramento',         region: 'Central',      lat: 38.5816, lon: -121.4944 },
   { name: 'Fresno',             region: 'Central',      lat: 36.7378, lon: -119.7871 },
   { name: 'Bakersfield',        region: 'Central',      lat: 35.3733, lon: -119.0187 },
@@ -76,139 +74,137 @@ const CITIES = [
   { name: 'Simi Valley',        region: 'Central',      lat: 34.2694, lon: -118.7815 },
   { name: 'Santa Barbara',      region: 'Central',      lat: 34.4208, lon: -119.6982 },
 
-  // === REST OF AMERICA ===
-
   // Pacific NW
-  { name: 'Seattle',          region: 'Pacific NW',    lat: 47.6062, lon: -122.3321 },
-  { name: 'Portland',         region: 'Pacific NW',    lat: 45.5152, lon: -122.6784 },
-  { name: 'Spokane',          region: 'Pacific NW',    lat: 47.6588, lon: -117.4260 },
-  { name: 'Tacoma',           region: 'Pacific NW',    lat: 47.2529, lon: -122.4443 },
-  { name: 'Vancouver',        region: 'Pacific NW',    lat: 45.6280, lon: -122.6739 },
-  { name: 'Bellevue',         region: 'Pacific NW',    lat: 47.6101, lon: -122.2015 },
-  { name: 'Eugene',           region: 'Pacific NW',    lat: 44.0521, lon: -123.0868 },
-  { name: 'Salem',            region: 'Pacific NW',    lat: 44.9429, lon: -123.0351 },
-  { name: 'Boise',            region: 'Pacific NW',    lat: 43.6150, lon: -116.2023 },
+  { name: 'Seattle',            region: 'Pacific NW',   lat: 47.6062, lon: -122.3321 },
+  { name: 'Portland',           region: 'Pacific NW',   lat: 45.5152, lon: -122.6784 },
+  { name: 'Spokane',            region: 'Pacific NW',   lat: 47.6588, lon: -117.4260 },
+  { name: 'Tacoma',             region: 'Pacific NW',   lat: 47.2529, lon: -122.4443 },
+  { name: 'Vancouver WA',       region: 'Pacific NW',   lat: 45.6280, lon: -122.6739 },
+  { name: 'Bellevue',           region: 'Pacific NW',   lat: 47.6101, lon: -122.2015 },
+  { name: 'Eugene',             region: 'Pacific NW',   lat: 44.0521, lon: -123.0868 },
+  { name: 'Salem',              region: 'Pacific NW',   lat: 44.9429, lon: -123.0351 },
+  { name: 'Boise',              region: 'Pacific NW',   lat: 43.6150, lon: -116.2023 },
 
   // Mountain West
-  { name: 'Phoenix',          region: 'Mountain West', lat: 33.4484, lon: -112.0740 },
-  { name: 'Tucson',           region: 'Mountain West', lat: 32.2226, lon: -110.9747 },
-  { name: 'Mesa',             region: 'Mountain West', lat: 33.4152, lon: -111.8315 },
-  { name: 'Scottsdale',       region: 'Mountain West', lat: 33.4942, lon: -111.9261 },
-  { name: 'Las Vegas',        region: 'Mountain West', lat: 36.1699, lon: -115.1398 },
-  { name: 'Henderson',        region: 'Mountain West', lat: 36.0395, lon: -114.9817 },
-  { name: 'Reno',             region: 'Mountain West', lat: 39.5296, lon: -119.8138 },
-  { name: 'Salt Lake City',   region: 'Mountain West', lat: 40.7608, lon: -111.8910 },
-  { name: 'Denver',           region: 'Mountain West', lat: 39.7392, lon: -104.9903 },
-  { name: 'Albuquerque',      region: 'Mountain West', lat: 35.0844, lon: -106.6504 },
-  { name: 'Colorado Springs', region: 'Mountain West', lat: 38.8339, lon: -104.8214 },
+  { name: 'Phoenix',            region: 'Mountain West', lat: 33.4484, lon: -112.0740 },
+  { name: 'Tucson',             region: 'Mountain West', lat: 32.2226, lon: -110.9747 },
+  { name: 'Mesa',               region: 'Mountain West', lat: 33.4152, lon: -111.8315 },
+  { name: 'Scottsdale',         region: 'Mountain West', lat: 33.4942, lon: -111.9261 },
+  { name: 'Las Vegas',          region: 'Mountain West', lat: 36.1699, lon: -115.1398 },
+  { name: 'Henderson',          region: 'Mountain West', lat: 36.0395, lon: -114.9817 },
+  { name: 'Reno',               region: 'Mountain West', lat: 39.5296, lon: -119.8138 },
+  { name: 'Salt Lake City',     region: 'Mountain West', lat: 40.7608, lon: -111.8910 },
+  { name: 'Denver',             region: 'Mountain West', lat: 39.7392, lon: -104.9903 },
+  { name: 'Albuquerque',        region: 'Mountain West', lat: 35.0844, lon: -106.6504 },
+  { name: 'Colorado Springs',   region: 'Mountain West', lat: 38.8339, lon: -104.8214 },
 
   // Texas
-  { name: 'Houston',          region: 'Texas',         lat: 29.7604, lon: -95.3698 },
-  { name: 'Dallas',           region: 'Texas',         lat: 32.7767, lon: -96.7970 },
-  { name: 'Austin',           region: 'Texas',         lat: 30.2672, lon: -97.7431 },
-  { name: 'San Antonio',      region: 'Texas',         lat: 29.4241, lon: -98.4936 },
-  { name: 'Fort Worth',       region: 'Texas',         lat: 32.7555, lon: -97.3308 },
-  { name: 'El Paso',          region: 'Texas',         lat: 31.7619, lon: -106.4850 },
-  { name: 'Plano',            region: 'Texas',         lat: 33.0198, lon: -96.6989 },
-  { name: 'Corpus Christi',   region: 'Texas',         lat: 27.8006, lon: -97.3964 },
-  { name: 'Lubbock',          region: 'Texas',         lat: 33.5779, lon: -101.8552 },
-  { name: 'Irving',           region: 'Texas',         lat: 32.8140, lon: -96.9489 },
+  { name: 'Houston',            region: 'Texas',        lat: 29.7604, lon: -95.3698 },
+  { name: 'Dallas',             region: 'Texas',        lat: 32.7767, lon: -96.7970 },
+  { name: 'Austin',             region: 'Texas',        lat: 30.2672, lon: -97.7431 },
+  { name: 'San Antonio',        region: 'Texas',        lat: 29.4241, lon: -98.4936 },
+  { name: 'Fort Worth',         region: 'Texas',        lat: 32.7555, lon: -97.3308 },
+  { name: 'El Paso',            region: 'Texas',        lat: 31.7619, lon: -106.4850 },
+  { name: 'Plano',              region: 'Texas',        lat: 33.0198, lon: -96.6989 },
+  { name: 'Corpus Christi',     region: 'Texas',        lat: 27.8006, lon: -97.3964 },
+  { name: 'Lubbock',            region: 'Texas',        lat: 33.5779, lon: -101.8552 },
+  { name: 'Irving',             region: 'Texas',        lat: 32.8140, lon: -96.9489 },
 
-  // Plains/Heartland
-  { name: 'Oklahoma City',    region: 'Plains',        lat: 35.4676, lon: -97.5164 },
-  { name: 'Tulsa',            region: 'Plains',        lat: 36.1539, lon: -95.9928 },
-  { name: 'Kansas City',      region: 'Plains',        lat: 39.0997, lon: -94.5786 },
-  { name: 'St. Louis',        region: 'Plains',        lat: 38.6270, lon: -90.1994 },
-  { name: 'Wichita',          region: 'Plains',        lat: 37.6872, lon: -97.3301 },
-  { name: 'Omaha',            region: 'Plains',        lat: 41.2565, lon: -95.9345 },
-  { name: 'Des Moines',       region: 'Plains',        lat: 41.5868, lon: -93.6250 },
-  { name: 'Lincoln',          region: 'Plains',        lat: 40.8136, lon: -96.7026 },
-  { name: 'Springfield MO',   region: 'Plains',        lat: 37.2090, lon: -93.2923 },
-  { name: 'Topeka',           region: 'Plains',        lat: 39.0473, lon: -95.6752 },
+  // Plains
+  { name: 'Oklahoma City',      region: 'Plains',       lat: 35.4676, lon: -97.5164 },
+  { name: 'Tulsa',              region: 'Plains',       lat: 36.1539, lon: -95.9928 },
+  { name: 'Kansas City',        region: 'Plains',       lat: 39.0997, lon: -94.5786 },
+  { name: 'St. Louis',          region: 'Plains',       lat: 38.6270, lon: -90.1994 },
+  { name: 'Wichita',            region: 'Plains',       lat: 37.6872, lon: -97.3301 },
+  { name: 'Omaha',              region: 'Plains',       lat: 41.2565, lon: -95.9345 },
+  { name: 'Des Moines',         region: 'Plains',       lat: 41.5868, lon: -93.6250 },
+  { name: 'Lincoln',            region: 'Plains',       lat: 40.8136, lon: -96.7026 },
+  { name: 'Springfield MO',     region: 'Plains',       lat: 37.2090, lon: -93.2923 },
+  { name: 'Topeka',             region: 'Plains',       lat: 39.0473, lon: -95.6752 },
 
   // Great Lakes
-  { name: 'Chicago',          region: 'Great Lakes',   lat: 41.8781, lon: -87.6298 },
-  { name: 'Milwaukee',        region: 'Great Lakes',   lat: 43.0389, lon: -87.9065 },
-  { name: 'Madison',          region: 'Great Lakes',   lat: 43.0731, lon: -89.4012 },
-  { name: 'Detroit',          region: 'Great Lakes',   lat: 42.3314, lon: -83.0458 },
-  { name: 'Grand Rapids',     region: 'Great Lakes',   lat: 42.9634, lon: -85.6681 },
-  { name: 'Minneapolis',      region: 'Great Lakes',   lat: 44.9778, lon: -93.2650 },
-  { name: 'St. Paul',         region: 'Great Lakes',   lat: 44.9537, lon: -93.0900 },
-  { name: 'Indianapolis',     region: 'Great Lakes',   lat: 39.7684, lon: -86.1581 },
-  { name: 'Fort Wayne',       region: 'Great Lakes',   lat: 41.0793, lon: -85.1394 },
-  { name: 'Toledo',           region: 'Great Lakes',   lat: 41.6528, lon: -83.5379 },
+  { name: 'Chicago',            region: 'Great Lakes',  lat: 41.8781, lon: -87.6298 },
+  { name: 'Milwaukee',          region: 'Great Lakes',  lat: 43.0389, lon: -87.9065 },
+  { name: 'Madison',            region: 'Great Lakes',  lat: 43.0731, lon: -89.4012 },
+  { name: 'Detroit',            region: 'Great Lakes',  lat: 42.3314, lon: -83.0458 },
+  { name: 'Grand Rapids',       region: 'Great Lakes',  lat: 42.9634, lon: -85.6681 },
+  { name: 'Minneapolis',        region: 'Great Lakes',  lat: 44.9778, lon: -93.2650 },
+  { name: 'St. Paul',           region: 'Great Lakes',  lat: 44.9537, lon: -93.0900 },
+  { name: 'Indianapolis',       region: 'Great Lakes',  lat: 39.7684, lon: -86.1581 },
+  { name: 'Fort Wayne',         region: 'Great Lakes',  lat: 41.0793, lon: -85.1394 },
+  { name: 'Toledo',             region: 'Great Lakes',  lat: 41.6528, lon: -83.5379 },
 
   // Ohio Valley
-  { name: 'Columbus',         region: 'Ohio Valley',   lat: 39.9612, lon: -82.9988 },
-  { name: 'Cincinnati',       region: 'Ohio Valley',   lat: 39.1031, lon: -84.5120 },
-  { name: 'Cleveland',        region: 'Ohio Valley',   lat: 41.4993, lon: -81.6944 },
-  { name: 'Akron',            region: 'Ohio Valley',   lat: 41.0814, lon: -81.5190 },
-  { name: 'Dayton',           region: 'Ohio Valley',   lat: 39.7589, lon: -84.1916 },
-  { name: 'Pittsburgh',       region: 'Ohio Valley',   lat: 40.4406, lon: -79.9959 },
-  { name: 'Louisville',       region: 'Ohio Valley',   lat: 38.2527, lon: -85.7585 },
-  { name: 'Lexington',        region: 'Ohio Valley',   lat: 38.0406, lon: -84.5037 },
-  { name: 'Buffalo',          region: 'Ohio Valley',   lat: 42.8864, lon: -78.8784 },
-  { name: 'Rochester NY',     region: 'Ohio Valley',   lat: 43.1566, lon: -77.6088 },
+  { name: 'Columbus',           region: 'Ohio Valley',  lat: 39.9612, lon: -82.9988 },
+  { name: 'Cincinnati',         region: 'Ohio Valley',  lat: 39.1031, lon: -84.5120 },
+  { name: 'Cleveland',          region: 'Ohio Valley',  lat: 41.4993, lon: -81.6944 },
+  { name: 'Akron',              region: 'Ohio Valley',  lat: 41.0814, lon: -81.5190 },
+  { name: 'Dayton',             region: 'Ohio Valley',  lat: 39.7589, lon: -84.1916 },
+  { name: 'Pittsburgh',         region: 'Ohio Valley',  lat: 40.4406, lon: -79.9959 },
+  { name: 'Louisville',         region: 'Ohio Valley',  lat: 38.2527, lon: -85.7585 },
+  { name: 'Lexington',          region: 'Ohio Valley',  lat: 38.0406, lon: -84.5037 },
+  { name: 'Buffalo',            region: 'Ohio Valley',  lat: 42.8864, lon: -78.8784 },
+  { name: 'Rochester NY',       region: 'Ohio Valley',  lat: 43.1566, lon: -77.6088 },
 
   // Southeast
-  { name: 'Atlanta',          region: 'Southeast',     lat: 33.7490, lon: -84.3880 },
-  { name: 'Charlotte',        region: 'Southeast',     lat: 35.2271, lon: -80.8431 },
-  { name: 'Raleigh',          region: 'Southeast',     lat: 35.7796, lon: -78.6382 },
-  { name: 'Durham',           region: 'Southeast',     lat: 35.9940, lon: -78.8986 },
-  { name: 'Greensboro',       region: 'Southeast',     lat: 36.0726, lon: -79.7920 },
-  { name: 'Charleston',       region: 'Southeast',     lat: 32.7765, lon: -79.9311 },
-  { name: 'Savannah',         region: 'Southeast',     lat: 32.0809, lon: -81.0912 },
-  { name: 'Columbia SC',      region: 'Southeast',     lat: 34.0007, lon: -81.0348 },
-  { name: 'Nashville',        region: 'Southeast',     lat: 36.1627, lon: -86.7816 },
-  { name: 'Knoxville',        region: 'Southeast',     lat: 35.9606, lon: -83.9207 },
+  { name: 'Atlanta',            region: 'Southeast',    lat: 33.7490, lon: -84.3880 },
+  { name: 'Charlotte',          region: 'Southeast',    lat: 35.2271, lon: -80.8431 },
+  { name: 'Raleigh',            region: 'Southeast',    lat: 35.7796, lon: -78.6382 },
+  { name: 'Durham',             region: 'Southeast',    lat: 35.9940, lon: -78.8986 },
+  { name: 'Greensboro',         region: 'Southeast',    lat: 36.0726, lon: -79.7920 },
+  { name: 'Charleston',         region: 'Southeast',    lat: 32.7765, lon: -79.9311 },
+  { name: 'Savannah',           region: 'Southeast',    lat: 32.0809, lon: -81.0912 },
+  { name: 'Columbia SC',        region: 'Southeast',    lat: 34.0007, lon: -81.0348 },
+  { name: 'Nashville',          region: 'Southeast',    lat: 36.1627, lon: -86.7816 },
+  { name: 'Knoxville',          region: 'Southeast',    lat: 35.9606, lon: -83.9207 },
 
   // Florida
-  { name: 'Miami',            region: 'Florida',       lat: 25.7617, lon: -80.1918 },
-  { name: 'Fort Lauderdale',  region: 'Florida',       lat: 26.1224, lon: -80.1373 },
-  { name: 'Hialeah',          region: 'Florida',       lat: 25.8576, lon: -80.2781 },
-  { name: 'Tampa',            region: 'Florida',       lat: 27.9506, lon: -82.4572 },
-  { name: 'St. Petersburg',   region: 'Florida',       lat: 27.7676, lon: -82.6403 },
-  { name: 'Orlando',          region: 'Florida',       lat: 28.5383, lon: -81.3792 },
-  { name: 'Jacksonville',     region: 'Florida',       lat: 30.3322, lon: -81.6557 },
-  { name: 'Tallahassee',      region: 'Florida',       lat: 30.4383, lon: -84.2807 },
-  { name: 'Cape Coral',       region: 'Florida',       lat: 26.5629, lon: -81.9495 },
-  { name: 'Hollywood FL',     region: 'Florida',       lat: 26.0112, lon: -80.1495 },
+  { name: 'Miami',              region: 'Florida',      lat: 25.7617, lon: -80.1918 },
+  { name: 'Fort Lauderdale',    region: 'Florida',      lat: 26.1224, lon: -80.1373 },
+  { name: 'Hialeah',            region: 'Florida',      lat: 25.8576, lon: -80.2781 },
+  { name: 'Tampa',              region: 'Florida',      lat: 27.9506, lon: -82.4572 },
+  { name: 'St. Petersburg',     region: 'Florida',      lat: 27.7676, lon: -82.6403 },
+  { name: 'Orlando',            region: 'Florida',      lat: 28.5383, lon: -81.3792 },
+  { name: 'Jacksonville',       region: 'Florida',      lat: 30.3322, lon: -81.6557 },
+  { name: 'Tallahassee',        region: 'Florida',      lat: 30.4383, lon: -84.2807 },
+  { name: 'Cape Coral',         region: 'Florida',      lat: 26.5629, lon: -81.9495 },
+  { name: 'Hollywood FL',       region: 'Florida',      lat: 26.0112, lon: -80.1495 },
 
   // Gulf South
-  { name: 'New Orleans',      region: 'Gulf South',    lat: 29.9511, lon: -90.0715 },
-  { name: 'Baton Rouge',      region: 'Gulf South',    lat: 30.4515, lon: -91.1871 },
-  { name: 'Birmingham',       region: 'Gulf South',    lat: 33.5186, lon: -86.8104 },
-  { name: 'Mobile',           region: 'Gulf South',    lat: 30.6954, lon: -88.0399 },
-  { name: 'Memphis',          region: 'Gulf South',    lat: 35.1495, lon: -90.0490 },
-  { name: 'Chattanooga',      region: 'Gulf South',    lat: 35.0456, lon: -85.3097 },
-  { name: 'Little Rock',      region: 'Gulf South',    lat: 34.7465, lon: -92.2896 },
-  { name: 'Jackson MS',       region: 'Gulf South',    lat: 32.2988, lon: -90.1848 },
-  { name: 'Shreveport',       region: 'Gulf South',    lat: 32.5252, lon: -93.7502 },
-  { name: 'Huntsville',       region: 'Gulf South',    lat: 34.7304, lon: -86.5861 },
+  { name: 'New Orleans',        region: 'Gulf South',   lat: 29.9511, lon: -90.0715 },
+  { name: 'Baton Rouge',        region: 'Gulf South',   lat: 30.4515, lon: -91.1871 },
+  { name: 'Birmingham',         region: 'Gulf South',   lat: 33.5186, lon: -86.8104 },
+  { name: 'Mobile',             region: 'Gulf South',   lat: 30.6954, lon: -88.0399 },
+  { name: 'Memphis',            region: 'Gulf South',   lat: 35.1495, lon: -90.0490 },
+  { name: 'Chattanooga',        region: 'Gulf South',   lat: 35.0456, lon: -85.3097 },
+  { name: 'Little Rock',        region: 'Gulf South',   lat: 34.7465, lon: -92.2896 },
+  { name: 'Jackson MS',         region: 'Gulf South',   lat: 32.2988, lon: -90.1848 },
+  { name: 'Shreveport',         region: 'Gulf South',   lat: 32.5252, lon: -93.7502 },
+  { name: 'Huntsville',         region: 'Gulf South',   lat: 34.7304, lon: -86.5861 },
 
   // Northeast
-  { name: 'New York',         region: 'Northeast',     lat: 40.7128, lon: -74.0060 },
-  { name: 'Newark',           region: 'Northeast',     lat: 40.7357, lon: -74.1724 },
-  { name: 'Jersey City',      region: 'Northeast',     lat: 40.7178, lon: -74.0431 },
-  { name: 'Boston',           region: 'Northeast',     lat: 42.3601, lon: -71.0589 },
-  { name: 'Worcester',        region: 'Northeast',     lat: 42.2626, lon: -71.8023 },
-  { name: 'Providence',       region: 'Northeast',     lat: 41.8240, lon: -71.4128 },
-  { name: 'Hartford',         region: 'Northeast',     lat: 41.7658, lon: -72.6734 },
-  { name: 'New Haven',        region: 'Northeast',     lat: 41.3083, lon: -72.9279 },
-  { name: 'Stamford',         region: 'Northeast',     lat: 41.0534, lon: -73.5387 },
-  { name: 'Yonkers',          region: 'Northeast',     lat: 40.9312, lon: -73.8987 },
+  { name: 'New York',           region: 'Northeast',    lat: 40.7128, lon: -74.0060 },
+  { name: 'Newark',             region: 'Northeast',    lat: 40.7357, lon: -74.1724 },
+  { name: 'Jersey City',        region: 'Northeast',    lat: 40.7178, lon: -74.0431 },
+  { name: 'Boston',             region: 'Northeast',    lat: 42.3601, lon: -71.0589 },
+  { name: 'Worcester',          region: 'Northeast',    lat: 42.2626, lon: -71.8023 },
+  { name: 'Providence',         region: 'Northeast',    lat: 41.8240, lon: -71.4128 },
+  { name: 'Hartford',           region: 'Northeast',    lat: 41.7658, lon: -72.6734 },
+  { name: 'New Haven',          region: 'Northeast',    lat: 41.3083, lon: -72.9279 },
+  { name: 'Stamford',           region: 'Northeast',    lat: 41.0534, lon: -73.5387 },
+  { name: 'Yonkers',            region: 'Northeast',    lat: 40.9312, lon: -73.8987 },
 
   // Mid-Atlantic
-  { name: 'Philadelphia',     region: 'Mid-Atlantic',  lat: 39.9526, lon: -75.1652 },
-  { name: 'Washington',       region: 'Mid-Atlantic',  lat: 38.9072, lon: -77.0369 },
-  { name: 'Baltimore',        region: 'Mid-Atlantic',  lat: 39.2904, lon: -76.6122 },
-  { name: 'Arlington VA',     region: 'Mid-Atlantic',  lat: 38.8816, lon: -77.0910 },
-  { name: 'Alexandria',       region: 'Mid-Atlantic',  lat: 38.8048, lon: -77.0469 },
-  { name: 'Richmond',         region: 'Mid-Atlantic',  lat: 37.5407, lon: -77.4360 },
-  { name: 'Virginia Beach',   region: 'Mid-Atlantic',  lat: 36.8529, lon: -75.9780 },
-  { name: 'Norfolk',          region: 'Mid-Atlantic',  lat: 36.8508, lon: -76.2859 },
-  { name: 'Newport News',     region: 'Mid-Atlantic',  lat: 37.0871, lon: -76.4730 },
-  { name: 'Chesapeake',       region: 'Mid-Atlantic',  lat: 36.7682, lon: -76.2875 },
+  { name: 'Philadelphia',       region: 'Mid-Atlantic', lat: 39.9526, lon: -75.1652 },
+  { name: 'Washington',         region: 'Mid-Atlantic', lat: 38.9072, lon: -77.0369 },
+  { name: 'Baltimore',          region: 'Mid-Atlantic', lat: 39.2904, lon: -76.6122 },
+  { name: 'Arlington VA',       region: 'Mid-Atlantic', lat: 38.8816, lon: -77.0910 },
+  { name: 'Alexandria',         region: 'Mid-Atlantic', lat: 38.8048, lon: -77.0469 },
+  { name: 'Richmond',           region: 'Mid-Atlantic', lat: 37.5407, lon: -77.4360 },
+  { name: 'Virginia Beach',     region: 'Mid-Atlantic', lat: 36.8529, lon: -75.9780 },
+  { name: 'Norfolk',            region: 'Mid-Atlantic', lat: 36.8508, lon: -76.2859 },
+  { name: 'Newport News',       region: 'Mid-Atlantic', lat: 37.0871, lon: -76.4730 },
+  { name: 'Chesapeake',         region: 'Mid-Atlantic', lat: 36.7682, lon: -76.2875 },
 ];
 
 const REGIONS = [
@@ -235,10 +231,11 @@ const INDUSTRY_TEMPLATES = {
   'Landscaping':   'landscape.html',
 };
 
-const RADIUS_M = 5000;
+const RADIUS_M = 15000;
 const PER_COMBO_CAP = 3;
 const TOTAL_CAP = 30;
 const BATCH_SIZE = 4;
+const MAX_REGIONS_PER_RUN = 5;
 
 const NOTES = [
   'You got dis!',
@@ -274,6 +271,18 @@ function slugify(s){
     .slice(0, 50);
 }
 
+function todayPlus(days){
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function uid(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
 async function buildDemoHtml(lead){
   const file = INDUSTRY_TEMPLATES[lead.industry];
   if(!file){
@@ -291,7 +300,7 @@ async function buildDemoHtml(lead){
 }
 
 async function netlifyCreateSite(name){
-   const resp = await fetch('https://api.netlify.com/api/v1/sites', {
+  const resp = await fetch('https://api.netlify.com/api/v1/sites', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${NETLIFY_TOKEN}`,
@@ -299,6 +308,12 @@ async function netlifyCreateSite(name){
     },
     body: JSON.stringify({ name }),
   });
+  if(!resp.ok){
+    const t = await resp.text();
+    throw new Error(`Netlify site create failed (${resp.status}): ${t.slice(0,200)}`);
+  }
+  return await resp.json();
+}
 
 async function netlifyCreateSiteWithFallback(baseSlug){
   const tries = [baseSlug, `${baseSlug}-${Math.random().toString(36).slice(2,5)}`, `${baseSlug}-${Date.now().toString(36).slice(-4)}`];
@@ -393,19 +408,7 @@ async function processPendingDemos(){
   await logHeartbeat(`Built ${succeeded}/${pending.length} demos.`);
 }
 
-function todayPlus(days){
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function uid(){
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-
-async function fetchFoursquare(city, industry){
+async function fetchOverpass(city, industry){
   const overpassQuery = `
     [out:json][timeout:25];
     (
@@ -428,7 +431,7 @@ async function fetchFoursquare(city, industry){
   const data = await resp.json();
   return (data.elements || []).map(el => {
     const t = el.tags || {};
-    const isChain = t.brand || t['brand:wikipedia'];
+    const isChain = !!(t.brand || t['brand:wikipedia']);
     return {
       name: t.name,
       tel: t.phone || t['contact:phone'] || null,
@@ -439,13 +442,17 @@ async function fetchFoursquare(city, industry){
     };
   });
 }
-  
+
 function isCandidate(p){
   if(!p.name) return false;
   if(!p.tel) return false;
   if(p.website) return false;
   if(p.chains && p.chains.length > 0) return false;
   return true;
+}
+
+function extractPhone(p){
+  return p.tel || null;
 }
 
 function extractRating(p){
@@ -458,6 +465,7 @@ function extractPhotoUrl(p){
   if(!photo.prefix || !photo.suffix) return null;
   return `${photo.prefix}1200x600${photo.suffix}`;
 }
+
 async function loadExisting(){
   const [leadsRes, draftsRes] = await Promise.all([
     sb.from('leads').select('name'),
@@ -494,13 +502,14 @@ async function scanRegion(region, existingNames){
     const batch = combos.slice(i, i + BATCH_SIZE);
     const results = await Promise.all(batch.map(async ({ city, industry }) => {
       try{
-        const places = await fetchFoursquare(city, industry);
+        const places = await fetchOverpass(city, industry);
         return { city, industry, places };
       }catch(e){
         console.error(`  ${city.name} × ${industry.label} failed: ${e.message}`);
         return { city, industry, places: [] };
       }
     }));
+
     for(const { city, industry, places } of results){
       const fresh = places
         .filter(isCandidate)
@@ -515,6 +524,7 @@ async function scanRegion(region, existingNames){
         found.push({ place: p, city, industry });
       }
     }
+
     if(i + BATCH_SIZE < combos.length){
       await new Promise(r => setTimeout(r, 300));
     }
@@ -528,7 +538,6 @@ async function main(){
 
   const now = new Date();
   const slotIndex = Math.floor((now.getUTCHours() * 60 + now.getUTCMinutes()) / 30);
-  const MAX_REGIONS_PER_RUN = 5;
 
   let allCandidates = [];
   let regionsTried = [];
