@@ -233,7 +233,7 @@ const INDUSTRY_TEMPLATES = {
 
 const RADIUS_M = 15000;
 const PER_COMBO_CAP = 3;
-const TOTAL_CAP = 30;
+const TOTAL_CAP = 10;
 const BATCH_SIZE = 4;
 const MAX_REGIONS_PER_RUN = 5;
 
@@ -369,8 +369,7 @@ async function processPendingDemos(){
   }
   const { data: pending, error } = await sb.from('leads')
     .select('*')
-    .eq('pending_demo', true)
-    .limit(5);
+    .eq('pending_demo', true);
   if(error){
     console.error('Failed to load pending demos:', error.message);
     return;
@@ -534,6 +533,12 @@ async function scanRegion(region, existingNames){
 
 async function main(){
   console.log('Elio waking up at', new Date().toISOString());
+    const { count: draftCount } = await sb.from('lead_drafts').select('*', { count: 'exact', head: true });
+  if(draftCount !== null && draftCount >= 100){
+    console.log(`Queue has ${draftCount} drafts. Pausing lead finding.`);
+    await logHeartbeat(`Queue full (${draftCount}/100). Skipping lead finding.`);
+    return;
+  }
   const { names: existingNames, recentNotes } = await loadExisting();
 
   const now = new Date();
