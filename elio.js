@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { readFile } from 'node:fs/promises';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
