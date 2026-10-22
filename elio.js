@@ -153,8 +153,17 @@ const INDUSTRY_TEMPLATES = {
 const RADIUS_M = 15000;
 const PER_COMBO_CAP = 3;
 const TOTAL_CAP = 10;
-const BATCH_SIZE = 4;
+// Two cities at a time with a real gap between them. The public Overpass
+// endpoint gives each IP a couple of slots; asking for four at once with a
+// 300ms gap got 429s and 502s on most requests, and the errors were swallowed
+// so a run looked successful while seeing almost nothing.
+const BATCH_SIZE = 2;
+const BATCH_DELAY_MS = 1200;
+const MAX_RETRIES = 3;
+const RETRY_BASE_MS = 3000;
 const MAX_REGIONS_PER_RUN = 5;
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 const NOTES = [
   'You got dis!',
@@ -332,27 +341,53 @@ async function processPendingDemos(){
   await logHeartbeat(`Built ${succeeded}/${pending.length} demos.`);
 }
 
-async function fetchOverpass(city, industry){
-  const overpassQuery = `
-    [out:json][timeout:25];
-    (
-      node[${industry.osm}](around:${RADIUS_M},${city.lat},${city.lon});
-      way[${industry.osm}](around:${RADIUS_M},${city.lat},${city.lon});
-    );
-    out center;
-  `;
+// Which industry an element belongs to, read back off its own tags.
+function industryOf(t){
+  if(t.amenity === 'cafe') return 'Cafe';
+  if(t.shop === 'bakery') return 'Bakery';
+  if(t.craft === 'plumber') return 'Plumbing';
+  if(t.craft === 'electrician') return 'Electrician';
+  if(t.craft === 'pool_construction') return 'Pool Cleaning';
+  if(t.craft === 'gardener') return 'Landscaping';
+  return null;
+}
+
+async function overpassPost(query, attempt = 0){
   const resp = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
-    body: 'data=' + encodeURIComponent(overpassQuery),
+    body: 'data=' + encodeURIComponent(query),
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'trukoder-elio/0.1 (lead-finder)',
+      'User-Agent': 'trukoder-elio/0.2 (lead-finder)',
     },
   });
-  if(!resp.ok){
-    throw new Error(`Overpass returned ${resp.status}`);
+  // Overpass says "come back later" with these. Waiting and retrying is the
+  // difference between finding leads and silently finding none.
+  if(resp.status === 429 || resp.status === 502 || resp.status === 504){
+    if(attempt >= MAX_RETRIES){
+      throw new Error(`Overpass ${resp.status} after ${attempt + 1} tries`);
+    }
+    const wait = RETRY_BASE_MS * Math.pow(2, attempt);
+    console.log(`    Overpass ${resp.status}, waiting ${wait}ms then retrying`);
+    await sleep(wait);
+    return overpassPost(query, attempt + 1);
   }
-  const data = await resp.json();
+  if(!resp.ok) throw new Error(`Overpass returned ${resp.status}`);
+  return await resp.json();
+}
+
+// One request covering every industry for a city, instead of one per
+// city-and-industry pair. Six times fewer requests for the same data.
+async function fetchOverpass(city){
+  const selectors = INDUSTRIES.map(i =>
+    `  node[${i.osm}](around:${RADIUS_M},${city.lat},${city.lon});\n` +
+    `  way[${i.osm}](around:${RADIUS_M},${city.lat},${city.lon});`
+  ).join('\n');
+
+  const data = await overpassPost(
+    `[out:json][timeout:90];\n(\n${selectors}\n);\nout center;`
+  );
+
   return (data.elements || []).map(el => {
     const t = el.tags || {};
     const isChain = !!(t.brand || t['brand:wikipedia']);
@@ -363,8 +398,9 @@ async function fetchOverpass(city, industry){
       chains: isChain ? [{ name: t.brand || 'chain' }] : [],
       rating: null,
       photos: [],
+      industry: industryOf(t),
     };
-  });
+  }).filter(p => p.industry);
 }
 
 function isCandidate(p){
@@ -426,43 +462,47 @@ async function logHeartbeat(message){
 
 async function scanRegion(region, existingNames){
   const regionCities = CITIES.filter(c => c.region === region);
-  const combos = [];
-  for(const city of regionCities){
-    for(const industry of INDUSTRIES){
-      combos.push({ city, industry });
-    }
-  }
-
   const found = [];
-  for(let i = 0; i < combos.length; i += BATCH_SIZE){
-    const batch = combos.slice(i, i + BATCH_SIZE);
-    const results = await Promise.all(batch.map(async ({ city, industry }) => {
+  const perCombo = {};
+
+  for(let i = 0; i < regionCities.length; i += BATCH_SIZE){
+    const batch = regionCities.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(batch.map(async (city) => {
       try{
-        const places = await fetchOverpass(city, industry);
-        return { city, industry, places };
+        return { city, places: await fetchOverpass(city) };
       }catch(e){
-        console.error(`  ${city.name} × ${industry.label} failed: ${e.message}`);
-        return { city, industry, places: [] };
+        console.error(`  ${city.name} failed: ${e.message}`);
+        return { city, places: [] };
       }
     }));
 
-    for(const { city, industry, places } of results){
+    for(const { city, places } of results){
       const fresh = places
         .filter(isCandidate)
         .filter(p => !existingNames.has(seenKey(p.name, city.name)));
       if(fresh.length > 0){
-        console.log(`  ${city.name} × ${industry.label}: ${fresh.length} new`);
+        console.log(`  ${city.name}: ${fresh.length} new`);
       }
-      for(const p of fresh.slice(0, PER_COMBO_CAP)){
+      for(const p of fresh){
+        const combo = city.name + '|' + p.industry;
+        if((perCombo[combo] || 0) >= PER_COMBO_CAP) continue;
         const key = seenKey(p.name, city.name);
         if(existingNames.has(key)) continue;
         existingNames.add(key);
-        found.push({ place: p, city, industry });
+        perCombo[combo] = (perCombo[combo] || 0) + 1;
+        found.push({
+          place: p,
+          city,
+          industry: INDUSTRIES.find(x => x.label === p.industry),
+        });
+        // Stop the moment there is a full batch of leads. No point asking
+        // Overpass for more of a region we are not going to use.
+        if(found.length >= TOTAL_CAP) return found;
       }
     }
 
-    if(i + BATCH_SIZE < combos.length){
-      await new Promise(r => setTimeout(r, 300));
+    if(i + BATCH_SIZE < regionCities.length){
+      await sleep(BATCH_DELAY_MS);
     }
   }
   return found;
