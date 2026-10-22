@@ -391,13 +391,18 @@ function extractPhotoUrl(p){
 }
 
 async function loadExisting(){
-  const [leadsRes, draftsRes] = await Promise.all([
+  // Rejected leads count as "seen". Without this a business that was turned
+  // down for being closed, or for already having a site, gets found again on
+  // the next scan and somebody has to reject it a second time.
+  const [leadsRes, draftsRes, rejectedRes] = await Promise.all([
     sb.from('leads').select('name'),
     sb.from('lead_drafts').select('name, notes'),
+    sb.from('rejected_leads').select('name'),
   ]);
   const names = new Set();
   (leadsRes.data || []).forEach(l => names.add((l.name||'').toLowerCase()));
   (draftsRes.data || []).forEach(l => names.add((l.name||'').toLowerCase()));
+  (rejectedRes.data || []).forEach(l => names.add((l.name||'').toLowerCase()));
   const recentNotes = new Set();
   (draftsRes.data || []).forEach(l => { if(l.notes) recentNotes.add(l.notes); });
   return { names, recentNotes };
