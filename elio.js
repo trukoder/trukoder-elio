@@ -290,6 +290,45 @@ async function netlifyDeployHtml(siteId, html){
   return deploy;
 }
 
+async function netlifyDeleteSite(siteId){
+  const resp = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${NETLIFY_TOKEN}` },
+  });
+  if(!resp.ok && resp.status !== 404){
+    throw new Error(`Netlify delete failed (${resp.status})`);
+  }
+}
+
+// Leilani approves a takedown in the portal; the actual deletion happens
+// here because the token lives in this repo's secrets, not in a browser
+// where it could be read and used against any site in the account.
+async function processApprovedDeletions(){
+  if(!NETLIFY_TOKEN) return;
+  const { data: approved, error } = await sb.from('leads')
+    .select('id, name, demo_link')
+    .eq('demo_delete_approved', true)
+    .not('demo_link', 'is', null);
+  if(error){ console.error('Could not read approved deletions:', error.message); return; }
+  if(!approved || approved.length === 0) return;
+
+  console.log(`Taking down ${approved.length} approved demo${approved.length>1?'s':''}...`);
+  for(const lead of approved){
+    try{
+      const name = String(lead.demo_link).replace(/^https?:\/\//, '').replace(/\.netlify\.app.*$/, '');
+      await netlifyDeleteSite(name);
+      const upd = await sb.from('leads')
+        .update({ demo_link: null, pending_demo: false })
+        .eq('id', lead.id);
+      if(upd.error) console.error(`  x ${lead.name}: site gone but row not updated: ${upd.error.message}`);
+      else console.log(`  - took down ${lead.name} (${name})`);
+    }catch(e){
+      console.error(`  x ${lead.name}: ${e.message}`);
+    }
+  }
+  await logHeartbeat(`Took down ${approved.length} approved demo(s).`);
+}
+
 async function processPendingDemos(){
   if(!NETLIFY_TOKEN){
     console.log('No NETLIFY_TOKEN — skipping demo processing.');
@@ -577,6 +616,7 @@ async function main(){
 async function run(){
   await main();
   await processPendingDemos();
+  await processApprovedDeletions();
 }
 
 run().catch(err => {
