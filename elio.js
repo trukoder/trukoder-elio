@@ -165,28 +165,6 @@ const MAX_REGIONS_PER_RUN = 5;
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-const NOTES = [
-  'You got dis!',
-  'One call closer.',
-  'Their site is begging for you.',
-  'Tiny step, big momentum.',
-  'They need what only you can build.',
-  'Your future client just doesn\'t know yet.',
-  'Be the email they remember.',
-  'Confidence — but make it kind.',
-  'Today\'s no is tomorrow\'s yes.',
-  "You're the upgrade they didn't know they needed.",
-  'Make their phone ring.',
-  'Sunshine and signed contracts.',
-  'Speak softly, design boldly.',
-  'Show up, stand out.',
-  'A little courage goes a long way.',
-  'Quietly unstoppable.',
-  'Their first impression is in your hands.',
-  'Polish, pixels, profit.',
-  'Dial like you mean it.',
-  'Worst they can say is no.',
-];
 
 function escapeHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -478,21 +456,14 @@ async function loadExisting(){
   // the next scan and somebody has to reject it a second time.
   const [leadsRes, draftsRes, rejectedRes] = await Promise.all([
     sb.from('leads').select('name, city'),
-    sb.from('lead_drafts').select('name, city, notes'),
+    sb.from('lead_drafts').select('name, city'),
     sb.from('rejected_leads').select('name, city'),
   ]);
   const names = new Set();
   (leadsRes.data || []).forEach(l => names.add(seenKey(l.name, l.city)));
   (draftsRes.data || []).forEach(l => names.add(seenKey(l.name, l.city)));
   (rejectedRes.data || []).forEach(l => names.add(seenKey(l.name, l.city)));
-  const recentNotes = new Set();
-  (draftsRes.data || []).forEach(l => { if(l.notes) recentNotes.add(l.notes); });
-  return { names, recentNotes };
-}
-
-function pickNote(used){
-  const available = NOTES.filter(n => !used.has(n));
-  return pick(available.length > 0 ? available : NOTES);
+  return names;
 }
 
 async function logHeartbeat(message){
@@ -555,7 +526,7 @@ async function main(){
     await logHeartbeat(`Queue full (${draftCount}/100). Skipping lead finding.`);
     return;
   }
-  const { names: existingNames, recentNotes } = await loadExisting();
+  const existingNames = await loadExisting();
 
   const now = new Date();
   const slotIndex = Math.floor((now.getUTCHours() * 60 + now.getUTCMinutes()) / 30);
@@ -582,10 +553,7 @@ async function main(){
   }
 
   const limited = allCandidates.slice(0, TOTAL_CAP);
-  const usedNotes = new Set(recentNotes);
   const rows = limited.map(({ place, city, industry }) => {
-    const note = pickNote(usedNotes);
-    usedNotes.add(note);
     return {
       id: uid(),
       name: place.name,
@@ -594,7 +562,6 @@ async function main(){
       industry: industry.label,
       status: 'New',
       follow_up_date: todayPlus(3),
-      notes: note,
       date_added: todayPlus(0),
       rating: extractRating(place),
       photo_url: extractPhotoUrl(place),
