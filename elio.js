@@ -390,19 +390,26 @@ function extractPhotoUrl(p){
   return `${photo.prefix}1200x600${photo.suffix}`;
 }
 
+// Match on name AND city. Matching on name alone meant one "7 Brew Coffee"
+// anywhere blocked every other branch in every other city, which quietly
+// threw away real leads.
+function seenKey(name, city){
+  return ((name || '') + '|' + (city || '')).toLowerCase();
+}
+
 async function loadExisting(){
   // Rejected leads count as "seen". Without this a business that was turned
   // down for being closed, or for already having a site, gets found again on
   // the next scan and somebody has to reject it a second time.
   const [leadsRes, draftsRes, rejectedRes] = await Promise.all([
-    sb.from('leads').select('name'),
-    sb.from('lead_drafts').select('name, notes'),
-    sb.from('rejected_leads').select('name'),
+    sb.from('leads').select('name, city'),
+    sb.from('lead_drafts').select('name, city, notes'),
+    sb.from('rejected_leads').select('name, city'),
   ]);
   const names = new Set();
-  (leadsRes.data || []).forEach(l => names.add((l.name||'').toLowerCase()));
-  (draftsRes.data || []).forEach(l => names.add((l.name||'').toLowerCase()));
-  (rejectedRes.data || []).forEach(l => names.add((l.name||'').toLowerCase()));
+  (leadsRes.data || []).forEach(l => names.add(seenKey(l.name, l.city)));
+  (draftsRes.data || []).forEach(l => names.add(seenKey(l.name, l.city)));
+  (rejectedRes.data || []).forEach(l => names.add(seenKey(l.name, l.city)));
   const recentNotes = new Set();
   (draftsRes.data || []).forEach(l => { if(l.notes) recentNotes.add(l.notes); });
   return { names, recentNotes };
@@ -442,14 +449,14 @@ async function scanRegion(region, existingNames){
     for(const { city, industry, places } of results){
       const fresh = places
         .filter(isCandidate)
-        .filter(p => !existingNames.has(p.name.toLowerCase()));
+        .filter(p => !existingNames.has(seenKey(p.name, city.name)));
       if(fresh.length > 0){
         console.log(`  ${city.name} × ${industry.label}: ${fresh.length} new`);
       }
       for(const p of fresh.slice(0, PER_COMBO_CAP)){
-        const lower = p.name.toLowerCase();
-        if(existingNames.has(lower)) continue;
-        existingNames.add(lower);
+        const key = seenKey(p.name, city.name);
+        if(existingNames.has(key)) continue;
+        existingNames.add(key);
         found.push({ place: p, city, industry });
       }
     }
